@@ -1,12 +1,21 @@
 import {
+	getAllTrackedProducts,
+	getUserTrackedProducts,
+	trackProduct,
+	untrackProduct,
+	updateAllProducts,
+} from "@/services/products";
+import logger from "./logger";
+import {
 	telegramBot as bot,
-	userSessions,
-	userTrackedProducts,
 	callMCPServer,
 	formatSearchResults,
 	formatPriceComparison,
+	formatTrackedProducts,
 } from "./telegramBot";
-import { formatTrackedProducts } from "./telegramBot";
+import { Product } from "./generated/prisma";
+import { useUser } from "./context/UserContext";
+import { createOrUpdateUser } from "@/services/user";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -39,6 +48,8 @@ interface ProductUpdate {
 	alert_triggered?: string;
 }
 
+const { setSession, setUser } = useUser();
+
 export async function handleUpdate(update: TelegramUpdate) {
 	// Message handler
 	if (update.message) {
@@ -58,6 +69,15 @@ export async function handleUpdate(update: TelegramUpdate) {
 				case /\/help/.test(text):
 					await handleHelpCommand(chatId);
 					break;
+				case /\/list/.test(text):
+					await handleListCommand(chatId, userId);
+					break;
+				case /\/update/.test(text):
+					await handleUpdateCommand(chatId);
+					break;
+				case /\/compare/.test(text):
+					await handleCompareCommand(chatId, text);
+					break;
 				// Add other command handlers...
 			}
 		}
@@ -76,8 +96,15 @@ export async function handleUpdate(update: TelegramUpdate) {
 }
 
 async function handleStartCommand(chatId: string, userId: string) {
-	const welcomeMessage = `
-    🛒 *Welcome to E-commerce Price Tracker Bot!*
+	// Create or retrieve user context
+	const user = await createOrUpdateUser(userId);
+	// Set user context
+	setUser({ id: user.userId });
+	setSession(userId, {});
+
+	try {
+		const welcomeMessage = `
+    🛒 *Welcome to E-commerce Price Assistant Bot!*
 
     I can help you track product prices across multiple platforms and alert you when prices change.
 
@@ -100,7 +127,14 @@ async function handleStartCommand(chatId: string, userId: string) {
     Just send me a product URL or use the commands above to get started!
     `;
 
-	bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
+		bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
+	} catch (error) {
+		logger.error("Error in handleStartCommand:", error);
+		bot.sendMessage(
+			chatId,
+			"❌ Failed to initialize user session. Please try again."
+		);
+	}
 }
 
 async function handleSearchCommand(chatId: string, text: string) {
@@ -117,11 +151,12 @@ async function handleSearchCommand(chatId: string, text: string) {
 			platforms: ["amazon", "ebay", "walmart"],
 			max_results: 5,
 		});
+		logger.info("MCP search_products results: ", results);
 
 		const keyboard = {
 			inline_keyboard: results.map((product: { url: string }) => [
-				{ text: "📈 Track", callback_data: `track:${product.url}` },
-				{ text: "🎯 Target", callback_data: `target:${product.url}` },
+				{ text: "📈 Track", callback_data: `track_${product.url}` },
+				{ text: "🎯 Target", callback_data: `target_${product.url}` },
 			]),
 		};
 
@@ -144,10 +179,6 @@ async function handleHelpCommand(chatId: string) {
     /search wireless headphones
     /search <query> - Search across all platforms
 
-    *Track Products:*
-    /track https://amazon.com/dp/... - Track for price changes
-    /track https://amazon.com/dp/... $50 - Track with target price
-
     *Manage Tracking:*
     /list - View tracked products
     /update - Update all tracked prices
@@ -157,7 +188,6 @@ async function handleHelpCommand(chatId: string) {
     /compare iPhone 15 - Compare across platforms
 
     *Other:*
-    /stats - View your usage statistics
     /help - Show this message
 
     *Tip:* You can also just send me a product URL directly!
@@ -170,22 +200,31 @@ async function handleListCommand(chatId: string, userId: string) {
 	bot.sendMessage(chatId, "📊 Fetching your tracked products...");
 
 	try {
-		const results = await callMCPServer("get_tracked_products", {
+		const results = await getUserTrackedProducts({
+			userId: userId,
 			include_price_history: false,
 		});
 
-		const message = formatTrackedProducts(results.products || []);
+		logger.info("User tracked products: ", { userId, results });
 
-		if (results.products && results.products.length > 0) {
+		const message = formatTrackedProducts(results.data || []);
+
+		if (results && results.length > 0) {
 			const keyboard = {
 				inline_keyboard: [
 					[{ text: "🔄 Update Prices", callback_data: "update_all" }],
-					[
+					// [
+					// 	{
+					// 		text: "📊 View Statistics",
+					// 		callback_data: "view_stats",
+					// 	},
+					// ],
+					...results.map((product: Product) => [
 						{
-							text: "📊 View Statistics",
-							callback_data: "view_stats",
+							text: "Remove (UnTrack)",
+							callback_data: `remove_${product.id}`,
 						},
-					],
+					]),
 				],
 			};
 
@@ -210,7 +249,15 @@ async function handleUpdateCommand(chatId: string) {
 	bot.sendMessage(chatId, "🔄 Updating prices for all tracked products...");
 
 	try {
-		const results = await callMCPServer("update_tracked_prices", {});
+		const productsUrl = await getAllTrackedProducts();
+		logger.info("Product URLs: ", productsUrl);
+
+		const results = await callMCPServer("get_price_update", {
+			urls: productsUrl.map((prod: Product) => prod.url),
+		});
+		logger.info("MCP products updates: ", results);
+
+		await updateAllProducts(results.updates);
 
 		let message = "📊 *Price Update Complete*\n\n";
 		message += `✅ Successfully updated: ${results.summary.successful_updates}\n`;
@@ -243,26 +290,10 @@ async function handleUpdateCommand(chatId: string) {
 	}
 }
 
-async function handleStatsCommand(chatId: string) {
-	try {
-		const stats = await callMCPServer("session_stats", {});
-
-		let message = "📈 *Your Usage Statistics*\n\n";
-		message += "```\n" + stats + "\n```";
-
-		bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		bot.sendMessage(
-			chatId,
-			`❌ Failed to fetch statistics: ${errorMessage}`
-		);
-	}
-}
-
-async function handleCompareCommand(chatId: string, query: string) {
+async function handleCompareCommand(chatId: string, text: string) {
 	bot.sendMessage(chatId, "⚖️ Comparing prices across platforms...");
+
+	const query = text.replace("/compare ", "");
 
 	try {
 		const results = await callMCPServer("compare_prices", {
@@ -296,7 +327,7 @@ async function handleProductUrl(chatId: string, text: string[]) {
 	try {
 		const productDetails = await callMCPServer("get_product_details", {
 			url,
-			include_reviews: false,
+			// include_reviews: false,
 		});
 
 		let message = "📦 *Product Details*\n\n";
@@ -348,7 +379,11 @@ async function handleCallbackQuery(
 		});
 
 		try {
-			const results = await callMCPServer("update_tracked_prices", {});
+			const productsUrl = await getAllTrackedProducts();
+			logger.info("Product URLs: ", productsUrl);
+			const results = await callMCPServer("get_price_update", {
+				urls: productsUrl.map((prod: Product) => prod.url),
+			});
 			let message = `🔄 Updated ${results.summary.successful_updates} products successfully!`;
 
 			if (results.summary.alerts_triggered > 0) {
@@ -385,8 +420,22 @@ async function handleCallbackQuery(
 		});
 
 		try {
-			await callMCPServer("track_product", { url });
+			await trackProduct(userId, url);
 			bot.sendMessage(chatId, "✅ Product added to price tracking!");
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			bot.sendMessage(chatId, `❌ Failed to track: ${errorMessage}`);
+		}
+	} else if (data.startsWith("remove_")) {
+		const productId = data.replace("remove_", "");
+		bot.answerCallbackQuery(callbackQuery.id, {
+			text: "Removing product from tracking list...",
+		});
+
+		try {
+			await untrackProduct(userId, productId);
+			bot.sendMessage(chatId, "✅ Product removed from price tracking!");
 		} catch (error: unknown) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
@@ -398,11 +447,8 @@ async function handleCallbackQuery(
 			text: "Please set target price...",
 		});
 
-		// Store URL in user session for target price input
-		if (!userSessions.has(userId)) {
-			userSessions.set(userId, {});
-		}
-		userSessions.get(userId).pendingTargetUrl = url;
+		// Store URL in session context
+		setSession(userId, { pendingTargetUrl: url });
 
 		bot.sendMessage(
 			chatId,

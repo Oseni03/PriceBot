@@ -43,7 +43,6 @@ export const telegramBot = bot;
 
 // Store sessions in-memory (consider Redis for production)
 export const userSessions = new Map<string, any>();
-export const userTrackedProducts = new Map<string, Map<string, Product>>();
 
 // MCP Server helper
 export async function callMCPServer(
@@ -88,13 +87,6 @@ export function formatSearchResults(results: SearchResults, query: string) {
 		message = `❌ No results found for "${query}". Please try a different search term.`;
 	}
 	return message;
-}
-
-export function getUserTrackedProducts(userId: string) {
-	if (!userTrackedProducts.has(userId)) {
-		userTrackedProducts.set(userId, new Map());
-	}
-	return userTrackedProducts.get(userId);
 }
 
 // Helper function to format price comparison results
