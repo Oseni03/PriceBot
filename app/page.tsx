@@ -167,7 +167,7 @@ export default function PriceTrackerLanding() {
 					</div>
 
 					{/* Supported Platforms */}
-					<div className="mb-16">
+					{/* <div className="mb-16">
 						<p className="text-gray-500 mb-6">
 							Trusted by thousands of smart shoppers
 						</p>
@@ -189,10 +189,10 @@ export default function PriceTrackerLanding() {
 								</div>
 							))}
 						</div>
-					</div>
+					</div> */}
 
 					{/* Stats */}
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
+					{/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
 						<div className="text-center">
 							<div className="text-3xl font-bold text-black mb-2">
 								$2.5M+
@@ -211,7 +211,7 @@ export default function PriceTrackerLanding() {
 							</div>
 							<div className="text-gray-600">Items Tracked</div>
 						</div>
-					</div>
+					</div> */}
 				</div>
 			</section>
 
