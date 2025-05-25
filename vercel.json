@@ -1,0 +1,15 @@
+{
+	"builds": [
+		{
+			"src": "package.json",
+			"use": "@vercel/node"
+		}
+	],
+	"routes": [
+		{
+			"src": "/api/cron",
+			"methods": ["POST", "OPTIONS"]
+		}
+	],
+	"buildCommand": "npm run build"
+}
