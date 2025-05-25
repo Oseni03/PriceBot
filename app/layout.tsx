@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
-import { UserProvider } from "@/lib/context/UserContext";
 import logger from "@/lib/logger";
 
 // Server-side initialization
@@ -12,8 +11,8 @@ if (process.env.NODE_ENV === "production") {
 }
 
 export const metadata: Metadata = {
-	title: "PriceMorph - Telegram E-commerce Price Tracker",
-	description: "PriceMorph - Telegram E-commerce Price Tracker",
+	title: "PriceMorph - Multi-platform E-commerce Price Tracker",
+	description: "PriceMorph - Multi-platform E-commerce Price Tracker",
 };
 
 export default function RootLayout({
@@ -23,9 +22,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body>
-				<UserProvider>{children}</UserProvider>
-			</body>
+			<body>{children}</body>
 		</html>
 	);
 }

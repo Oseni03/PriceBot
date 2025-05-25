@@ -42,9 +42,6 @@ export async function setupWebhook() {
 // Shared bot instance
 export const telegramBot = bot;
 
-// Store sessions in-memory (consider Redis for production)
-export const userSessions = new Map<string, any>();
-
 // MCP Server helper
 export async function callMCPServer(
 	tool: string,

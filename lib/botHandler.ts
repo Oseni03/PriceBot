@@ -14,8 +14,8 @@ import {
 	formatTrackedProducts,
 } from "./telegramBot";
 import { Product } from "./generated/prisma";
-import { useUser } from "./context/UserContext";
 import { createOrUpdateUser } from "@/services/user";
+import { sessionService } from "./services/sessionService";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -47,8 +47,6 @@ interface ProductUpdate {
 	name?: string;
 	alert_triggered?: string;
 }
-
-const { setSession, setUser } = useUser();
 
 export async function handleUpdate(update: TelegramUpdate) {
 	// Message handler
@@ -98,9 +96,8 @@ export async function handleUpdate(update: TelegramUpdate) {
 async function handleStartCommand(chatId: string, userId: string) {
 	// Create or retrieve user context
 	const user = await createOrUpdateUser(userId);
-	// Set user context
-	setUser({ id: user.userId });
-	setSession(userId, {});
+	// Update to use session service
+	await sessionService.setSession(userId, {});
 
 	try {
 		const welcomeMessage = `
@@ -447,8 +444,8 @@ async function handleCallbackQuery(
 			text: "Please set target price...",
 		});
 
-		// Store URL in session context
-		setSession(userId, { pendingTargetUrl: url });
+		// Update to use session service
+		await sessionService.setSession(userId, { pendingTargetUrl: url });
 
 		bot.sendMessage(
 			chatId,
