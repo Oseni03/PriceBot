@@ -31,12 +31,7 @@ if (!TELEGRAM_BOT_TOKEN) {
 }
 
 // Initialize Telegram bot
-const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, {
-	// webHook: {
-	//     port: PORT,
-	//     host: '0.0.0.0'
-	// }
-});
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
 
 // Initialize in webhook mode for Next.js
 export async function setupWebhook() {
