@@ -5,11 +5,6 @@
 			"use": "@vercel/node"
 		}
 	],
-	"routes": [
-		{
-			"src": "/api/cron",
-			"methods": ["POST", "OPTIONS"]
-		}
-	],
-	"buildCommand": "npm run build"
+	"buildCommand": "next build",
+	"installCommand": "npm install"
 }

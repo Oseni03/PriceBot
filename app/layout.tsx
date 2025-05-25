@@ -10,8 +10,8 @@ if (process.env.NODE_ENV === "production") {
 }
 
 export const metadata: Metadata = {
-	title: "PriceBot - Telegram E-commerce Price Tracker",
-	description: "PriceBot - Telegram E-commerce Price Tracker",
+	title: "PriceMorph - Telegram E-commerce Price Tracker",
+	description: "PriceMorph - Telegram E-commerce Price Tracker",
 };
 
 export default function RootLayout({
