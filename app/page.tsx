@@ -156,14 +156,14 @@ export default function PriceTrackerLanding() {
 								<ArrowRight className="h-5 w-5 ml-2" />
 							</Link>
 						</Button>
-						<Button
+						{/* <Button
 							size="lg"
 							variant="outline"
 							className="text-lg px-8 py-6"
 						>
 							<Globe className="h-5 w-5 mr-2" />
 							View Demo
-						</Button>
+						</Button> */}
 					</div>
 
 					{/* Supported Platforms */}
