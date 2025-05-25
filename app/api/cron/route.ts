@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { callMCPServer } from "@/lib/telegramBot";
+import logger from "@/lib/logger";
 
 export async function POST() {
 	try {
@@ -31,7 +32,7 @@ export async function POST() {
 			}
 		);
 	} catch (error) {
-		console.error("Cron job failed:", error);
+		logger.error("Cron job failed:", error);
 		return NextResponse.json(
 			{
 				error: "Internal server error",

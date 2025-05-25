@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { ProductError } from "../lib/errors/ProductError";
+import logger from "@/lib/logger";
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,7 @@ export async function getUserTrackedProducts({
 		});
 		return products;
 	} catch (error) {
-		console.error("Failed to get user tracked products:", error);
+		logger.error("Failed to get user tracked products:", error);
 		if (error instanceof ProductError) throw error;
 		throw new ProductError("Failed to fetch products", "DATABASE_ERROR");
 	}
@@ -49,7 +50,7 @@ export async function getAllTrackedProducts() {
 		});
 		return products;
 	} catch (error) {
-		console.error("Failed to get all tracked products:", error);
+		logger.error("Failed to get all tracked products:", error);
 		throw new ProductError("Failed to fetch products", "DATABASE_ERROR");
 	}
 }
@@ -91,7 +92,7 @@ export async function updateAllProducts(
 
 		return await prisma.$transaction(updates);
 	} catch (error) {
-		console.error("Failed to update products:", error);
+		logger.error("Failed to update products:", error);
 		if (error instanceof ProductError) throw error;
 		throw new ProductError("Failed to update products", "DATABASE_ERROR");
 	}
@@ -129,7 +130,7 @@ export async function trackProduct(userId: string, url: string) {
 			},
 		});
 	} catch (error) {
-		console.error("Failed to track product:", error);
+		logger.error("Failed to track product:", error);
 		if (error instanceof ProductError) throw error;
 		throw new ProductError("Failed to track product", "DATABASE_ERROR");
 	}
@@ -175,7 +176,7 @@ export async function untrackProduct(userId: string, productId: string) {
 			},
 		});
 	} catch (error) {
-		console.error("Failed to untrack product:", error);
+		logger.error("Failed to untrack product:", error);
 		if (error instanceof ProductError) throw error;
 		throw new ProductError("Failed to untrack product", "DATABASE_ERROR");
 	}

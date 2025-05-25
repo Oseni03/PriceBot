@@ -1,5 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 import axios from "axios";
+import logger from "./logger";
 
 // Add type definitions
 interface SearchResult {
@@ -58,7 +59,7 @@ export async function callMCPServer(
 	} catch (error: unknown) {
 		const errorMessage =
 			error instanceof Error ? error.message : "Unknown error";
-		console.error(`MCP Server error for ${tool}:`, errorMessage);
+		logger.error(`MCP Server error for ${tool}:`, errorMessage);
 		throw new Error(`Failed to execute ${tool}: ${errorMessage}`);
 	}
 }

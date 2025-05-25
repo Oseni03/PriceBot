@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
 import { UserProvider } from "@/lib/context/UserContext";
+import logger from "@/lib/logger";
 
 // Server-side initialization
 if (process.env.NODE_ENV === "production") {
 	setupWebhook().catch((error) => {
-		console.error("Failed to setup Telegram webhook:", error);
+		logger.error("Failed to setup Telegram webhook:", error);
 	});
 }
 

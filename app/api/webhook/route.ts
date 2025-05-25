@@ -1,7 +1,7 @@
 // app/api/webhook/route.ts
 import { NextResponse } from "next/server";
-import { telegramBot } from "@/lib/telegramBot";
 import { handleUpdate } from "@/lib/botHandler";
+import logger from "@/lib/logger";
 
 export async function POST(req: Request) {
 	try {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 			}
 		);
 	} catch (error) {
-		console.error("Webhook processing error:", error);
+		logger.error("Webhook processing error:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{

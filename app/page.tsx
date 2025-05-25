@@ -117,9 +117,15 @@ export default function PriceTrackerLanding() {
 							Reviews
 						</Link>
 					</nav>
-					<Button variant="outline">
-						<MessageCircle className="h-4 w-4 mr-2" />
-						Get Started
+					<Button variant="outline" asChild>
+						<Link
+							href={telegramBotURL}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<MessageCircle className="h-4 w-4 mr-2" />
+							Get Started
+						</Link>
 					</Button>
 				</div>
 			</header>

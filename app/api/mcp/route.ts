@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import logger from "@/lib/logger";
 
 const MCP_SERVER_URL = process.env.MCP_SERVER_URL || "http://localhost:3001";
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 		);
 		return NextResponse.json(response.data);
 	} catch (error: any) {
-		console.error("MCP Server error:", error.message);
+		logger.error("MCP Server error:", error.message);
 		return NextResponse.json(
 			{ error: error.message || "Failed to execute MCP tool" },
 			{ status: 500 }
