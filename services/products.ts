@@ -1,10 +1,8 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
 import { ProductError } from "../lib/errors/ProductError";
 import logger from "@/lib/logger";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function getUserTrackedProducts({
 	userId,
