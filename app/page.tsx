@@ -263,7 +263,10 @@ export default function PriceTrackerLanding() {
 			</section>
 
 			{/* Features Showcase */}
-			<section className="py-20 px-4 min-h-screen flex items-center justify-center">
+			<section
+				className="py-20 px-4 min-h-screen flex items-center justify-center"
+				id="features"
+			>
 				<div className="container mx-auto max-w-6xl">
 					<div className="text-center mb-16">
 						<h2 className="text-4xl font-bold mb-4">
@@ -563,11 +566,14 @@ export default function PriceTrackerLanding() {
 							<h4 className="font-semibold mb-4">Product</h4>
 							<ul className="space-y-2 text-gray-400">
 								<li>
-									<Link href="#" className="hover:text-white">
+									<Link
+										href="/#features"
+										className="hover:text-white"
+									>
 										Features
 									</Link>
 								</li>
-								<li>
+								{/* <li>
 									<Link href="#" className="hover:text-white">
 										Pricing
 									</Link>
@@ -576,7 +582,7 @@ export default function PriceTrackerLanding() {
 									<Link href="#" className="hover:text-white">
 										API
 									</Link>
-								</li>
+								</li> */}
 							</ul>
 						</div>
 

@@ -16,6 +16,7 @@ import {
 import { Product } from "./generated/prisma";
 import { createOrUpdateUser } from "@/services/user";
 import { sessionService } from "./services/sessionService";
+import { mcpClientService } from "./services/mcpClientService";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -61,33 +62,47 @@ export async function handleUpdate(update: TelegramUpdate) {
 				case /\/start/.test(text):
 					await handleStartCommand(chatId, userId);
 					break;
-				case /\/search/.test(text):
-					await handleSearchCommand(chatId, text);
-					break;
 				case /\/help/.test(text):
 					await handleHelpCommand(chatId);
 					break;
 				case /\/list/.test(text):
 					await handleListCommand(chatId, userId);
 					break;
-				case /\/update/.test(text):
-					await handleUpdateCommand(chatId);
-					break;
-				case /\/compare/.test(text):
-					await handleCompareCommand(chatId, text);
-					break;
-				// Add other command handlers...
+				default:
+					bot.sendMessage(
+						chatId,
+						"❌ Unknown command. Use /help to see available commands."
+					);
 			}
+			return;
 		}
 
-		const match = await isProductUrl(text);
-		// Handle URL messages
-		if (match) {
-			await handleProductUrl(chatId, match);
+		// Handle any other text as a query to MCP
+		try {
+			const response = await fetch("/api/mcp-client", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ query: text }),
+			});
+
+			if (!response.ok) {
+				throw new Error("Failed to process query");
+			}
+
+			const data = await response.json();
+			bot.sendMessage(chatId, data.response, { parse_mode: "Markdown" });
+		} catch (error) {
+			logger.error("Error processing query:", error);
+			bot.sendMessage(
+				chatId,
+				"❌ Sorry, I couldn't process your request."
+			);
 		}
 	}
 
-	// Callback query handler
+	// Handle callback queries
 	if (update.callback_query) {
 		await handleCallbackQuery(update.callback_query);
 	}
@@ -134,40 +149,6 @@ async function handleStartCommand(chatId: string, userId: string) {
 	}
 }
 
-async function handleSearchCommand(chatId: string, text: string) {
-	const query = text.replace("/search ", "");
-
-	bot.sendMessage(
-		chatId,
-		"🔍 Searching for products... This may take a moment."
-	);
-
-	try {
-		const results = await callMCPServer("search_products", {
-			query,
-			platforms: ["amazon", "ebay", "walmart"],
-			max_results: 5,
-		});
-		logger.info("MCP search_products results: ", results);
-
-		const keyboard = {
-			inline_keyboard: results.map((product: { url: string }) => [
-				{ text: "📈 Track", callback_data: `track_${product.url}` },
-				{ text: "🎯 Target", callback_data: `target_${product.url}` },
-			]),
-		};
-
-		await bot.sendMessage(chatId, formatSearchResults(results, query), {
-			parse_mode: "Markdown",
-			reply_markup: keyboard,
-		});
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		bot.sendMessage(chatId, `❌ Search failed: ${errorMessage}`);
-	}
-}
-
 async function handleHelpCommand(chatId: string) {
 	const helpMessage = `
     🔧 *Bot Commands & Usage*
@@ -204,7 +185,17 @@ async function handleListCommand(chatId: string, userId: string) {
 
 		logger.info("User tracked products: ", { userId, results });
 
-		const message = formatTrackedProducts(results.data || []);
+		const transformedResults = (results || []).map((product) => ({
+			...product,
+			first_tracked: (product.createdAt || new Date()).toISOString(),
+			update_count: product.prices?.length || 0,
+			price_history_count: product.prices?.length || 0,
+			target_price: product.target_price ?? undefined,
+			tracking_type: product.tracking_type as
+				| "target_price"
+				| "price_change",
+		}));
+		const message = formatTrackedProducts(transformedResults);
 
 		if (results && results.length > 0) {
 			const keyboard = {
@@ -238,125 +229,6 @@ async function handleListCommand(chatId: string, userId: string) {
 		bot.sendMessage(
 			chatId,
 			`❌ Failed to fetch tracked products: ${errorMessage}`
-		);
-	}
-}
-
-async function handleUpdateCommand(chatId: string) {
-	bot.sendMessage(chatId, "🔄 Updating prices for all tracked products...");
-
-	try {
-		const productsUrl = await getAllTrackedProducts();
-		logger.info("Product URLs: ", productsUrl);
-
-		const results = await callMCPServer("get_price_update", {
-			urls: productsUrl.map((prod: Product) => prod.url),
-		});
-		logger.info("MCP products updates: ", results);
-
-		await updateAllProducts(results.updates);
-
-		let message = "📊 *Price Update Complete*\n\n";
-		message += `✅ Successfully updated: ${results.summary.successful_updates}\n`;
-		message += `❌ Failed updates: ${results.summary.failed_updates}\n`;
-		message += `🚨 Alerts triggered: ${results.summary.alerts_triggered}\n\n`;
-
-		if (results.updates && results.updates.length > 0) {
-			message += "*Update Details:*\n";
-			results.updates.slice(0, 5).forEach((update: ProductUpdate) => {
-				if (update.status === "updated") {
-					message += `✅ ${update.name || "Product"}\n`;
-					if (update.alert_triggered) {
-						message += `🚨 ${update.alert_triggered}\n`;
-					}
-				} else {
-					message += `❌ Update failed\n`;
-				}
-			});
-
-			if (results.updates.length > 5) {
-				message += `\n... and ${results.updates.length - 5} more`;
-			}
-		}
-
-		bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		bot.sendMessage(chatId, `❌ Price update failed: ${errorMessage}`);
-	}
-}
-
-async function handleCompareCommand(chatId: string, text: string) {
-	bot.sendMessage(chatId, "⚖️ Comparing prices across platforms...");
-
-	const query = text.replace("/compare ", "");
-
-	try {
-		const results = await callMCPServer("compare_prices", {
-			query,
-			platforms: ["amazon", "ebay", "walmart", "bestbuy"],
-		});
-
-		const message = formatPriceComparison(results.results || []);
-		bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		bot.sendMessage(chatId, `❌ Price comparison failed: ${errorMessage}`);
-	}
-}
-
-async function isProductUrl(text: any) {
-	if (!text || text.startsWith("/")) return;
-
-	// Check if message contains a product URL
-	const urlRegex =
-		/(https?:\/\/(?:www\.)?(?:amazon|ebay|walmart|etsy|bestbuy|homedepot|zara)\.[\w\.]+\/[^\s]+)/i;
-	const match = text.match(urlRegex);
-	return match;
-}
-
-async function handleProductUrl(chatId: string, text: string[]) {
-	const url = text[1];
-	bot.sendMessage(chatId, "🔍 Detected product URL! Getting details...");
-
-	try {
-		const productDetails = await callMCPServer("get_product_details", {
-			url,
-			// include_reviews: false,
-		});
-
-		let message = "📦 *Product Details*\n\n";
-		message += `🏪 Platform: ${productDetails.platform}\n`;
-		message += `🔗 [View Product](${url})\n\n`;
-		message += "💡 Would you like to track this product for price changes?";
-
-		const keyboard = {
-			inline_keyboard: [
-				[
-					{
-						text: "📈 Track Price Changes",
-						callback_data: `track_${url}`,
-					},
-					{
-						text: "🎯 Set Target Price",
-						callback_data: `target_${url}`,
-					},
-				],
-			],
-		};
-
-		bot.sendMessage(chatId, message, {
-			parse_mode: "Markdown",
-			reply_markup: keyboard,
-		});
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		bot.sendMessage(
-			chatId,
-			`❌ Failed to get product details: ${errorMessage}`
 		);
 	}
 }
@@ -451,5 +323,22 @@ async function handleCallbackQuery(
 			chatId,
 			'💰 Please send your target price (e.g., "$50" or "50")'
 		);
+	} else if (data.startsWith("mcp_")) {
+		const query = data.replace("mcp_", "");
+		bot.answerCallbackQuery(callbackQuery.id, {
+			text: "Processing MCP query...",
+		});
+
+		try {
+			const response = await mcpClientService.processQuery(query);
+			bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
+			bot.sendMessage(
+				chatId,
+				`❌ Failed to process query: ${errorMessage}`
+			);
+		}
 	}
 }
