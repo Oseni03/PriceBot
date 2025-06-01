@@ -5,15 +5,13 @@ import logger from "@/lib/logger";
 import { initializeServices } from "@/lib/init";
 
 // Server-side initialization
-if (process.env.NODE_ENV === "production") {
-	setupWebhook().catch((error) => {
-		logger.error("Failed to setup Telegram webhook:", error);
-	});
+setupWebhook().catch((error) => {
+	logger.error("Failed to setup Telegram webhook:", error);
+});
 
-	initializeServices().catch((error) => {
-		logger.error("Failed to initialize services:", error);
-	});
-}
+initializeServices().catch((error) => {
+	logger.error("Failed to initialize services:", error);
+});
 
 export const metadata: Metadata = {
 	title: "PriceMorph - Multi-platform E-commerce Price Tracker",

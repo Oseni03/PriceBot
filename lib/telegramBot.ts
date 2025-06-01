@@ -1,6 +1,4 @@
 import TelegramBot from "node-telegram-bot-api";
-import axios from "axios";
-import logger from "./logger";
 import { type Product } from "@/types/products";
 interface SearchResult {
 	platform: string;
@@ -13,7 +11,6 @@ interface SearchResults {
 }
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const MCP_SERVER_URL = process.env.MCP_SERVER_URL || "http://localhost:3001";
 
 if (!TELEGRAM_BOT_TOKEN) {
 	throw new Error("TELEGRAM_BOT_TOKEN is required");
@@ -29,25 +26,6 @@ export async function setupWebhook() {
 
 // Shared bot instance
 export const telegramBot = bot;
-
-// MCP Server helper
-export async function callMCPServer(
-	tool: string,
-	params: Record<string, any> = {}
-) {
-	try {
-		const response = await axios.post(
-			`${MCP_SERVER_URL}/tools/${tool}`,
-			params
-		);
-		return response.data;
-	} catch (error: unknown) {
-		const errorMessage =
-			error instanceof Error ? error.message : "Unknown error";
-		logger.error(`MCP Server error for ${tool}:`, errorMessage);
-		throw new Error(`Failed to execute ${tool}: ${errorMessage}`);
-	}
-}
 
 // Formatting helpers
 export function formatSearchResults(results: SearchResults, query: string) {
