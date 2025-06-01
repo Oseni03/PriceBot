@@ -1,23 +1,11 @@
 import TelegramBot from "node-telegram-bot-api";
 import axios from "axios";
 import logger from "./logger";
-
-// Add type definitions
+import { type Product } from "@/types/products";
 interface SearchResult {
 	platform: string;
 	error?: string;
 	search_url?: string;
-}
-
-interface Product {
-	name: string;
-	platform: string;
-	first_tracked: string;
-	update_count: number;
-	price_history_count: number;
-	target_price?: number;
-	url: string;
-	tracking_type: "target_price" | "price_change";
 }
 
 interface SearchResults {
@@ -116,19 +104,25 @@ export function formatTrackedProducts(products: Product[]) {
 	let message = `📊 *Your Tracked Products (${products.length})*\n\n`;
 
 	products.forEach((product: Product) => {
-		const emoji = product.tracking_type === "target_price" ? "🎯" : "📈";
+		const emoji = product.target_price ? "🎯" : "📈";
 		message += `${emoji} *${product.name}*\n`;
 		message += `🏪 Platform: ${product.platform}\n`;
 		message += `📅 Tracked since: ${new Date(
-			product.first_tracked
+			product.createdAt || new Date()
 		).toLocaleDateString()}\n`;
-		message += `🔄 Updates: ${product.update_count}\n`;
-		message += `📊 Price history: ${product.price_history_count} entries\n`;
 
-		if (product.target_price) {
-			message += `💰 Target: $${product.target_price}\n`;
+		if (product.prices && product.prices.length > 0) {
+			const latestPrice = product.prices[0].amount;
+			message += `💰 Current Price: $${(latestPrice / 100).toFixed(2)}\n`;
 		}
 
+		if (product.target_price) {
+			message += `🎯 Target: $${(product.target_price / 100).toFixed(
+				2
+			)}\n`;
+		}
+
+		message += `🔄 Price Updates: ${product.prices?.length || 0}\n`;
 		message += `🔗 [View Product](${product.url})\n\n`;
 	});
 

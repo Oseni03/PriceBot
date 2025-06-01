@@ -55,7 +55,7 @@ export async function getAllTrackedProducts() {
 
 export async function updateAllProducts(
 	data: {
-		id: string;
+		productId: string;
 		currentPrice: number;
 	}[]
 ) {
@@ -66,7 +66,7 @@ export async function updateAllProducts(
 
 		// Validate all items in data array
 		data.forEach((item) => {
-			if (!item.id || typeof item.currentPrice !== "number") {
+			if (!item.productId || typeof item.currentPrice !== "number") {
 				throw new ProductError(
 					"Invalid product data format",
 					"INVALID_INPUT",
@@ -77,7 +77,7 @@ export async function updateAllProducts(
 
 		const updates = data.map((item) =>
 			prisma.product.update({
-				where: { id: item.id },
+				where: { id: item.productId },
 				data: {
 					prices: {
 						create: {

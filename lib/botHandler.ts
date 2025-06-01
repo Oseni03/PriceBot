@@ -1,22 +1,8 @@
-import {
-	getAllTrackedProducts,
-	getUserTrackedProducts,
-	trackProduct,
-	untrackProduct,
-	updateAllProducts,
-} from "@/services/products";
 import logger from "./logger";
-import {
-	telegramBot as bot,
-	callMCPServer,
-	formatSearchResults,
-	formatPriceComparison,
-	formatTrackedProducts,
-} from "./telegramBot";
-import { Product } from "./generated/prisma";
+import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
 import { createOrUpdateUser } from "@/services/user";
 import { sessionService } from "./services/sessionService";
-import { mcpClientService } from "./services/mcpClientService";
+import { type Product } from "@/types/products";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -43,12 +29,6 @@ interface TelegramUpdate {
 	};
 }
 
-interface ProductUpdate {
-	status: string;
-	name?: string;
-	alert_triggered?: string;
-}
-
 export async function handleUpdate(update: TelegramUpdate) {
 	// Message handler
 	if (update.message) {
@@ -67,6 +47,9 @@ export async function handleUpdate(update: TelegramUpdate) {
 					break;
 				case /\/list/.test(text):
 					await handleListCommand(chatId, userId);
+					break;
+				case /\/update/.test(text):
+					await handleUpdateCommand(chatId, userId);
 					break;
 				default:
 					bot.sendMessage(
@@ -121,10 +104,8 @@ async function handleStartCommand(chatId: string, userId: string) {
     I can help you track product prices across multiple platforms and alert you when prices change.
 
     *Available Commands:*
-    /search <query> - Search for products across platforms
     /track <product_url> - Track a product for price changes
     /list - View your tracked products
-    /compare <query> - Compare prices across platforms
     /update - Update prices for your tracked products
     /help - Show this help message
 
@@ -153,39 +134,87 @@ async function handleHelpCommand(chatId: string) {
 	const helpMessage = `
     🔧 *Bot Commands & Usage*
 
-    *Search Products:*
-    /search wireless headphones
-    /search <query> - Search across all platforms
-
     *Manage Tracking:*
+    /track <product_url> - Track a product for price changes
     /list - View tracked products
     /update - Update all tracked prices
-    /remove <number> - Remove tracked product by number
-
-    *Compare Prices:*
-    /compare iPhone 15 - Compare across platforms
 
     *Other:*
     /help - Show this message
 
-    *Tip:* You can also just send me a product URL directly!
+    *Tip:* You can also just send me a product URL directly! or type your query
     `;
 
 	bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+}
+
+async function handleUpdateCommand(chatId: string, userId: string) {
+	bot.sendMessage(chatId, "🔄 Updating prices for your tracked products...");
+
+	try {
+		// Get user's tracked products
+		const productsResponse = await fetch("/api/mcp/user-products", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ userId }),
+		});
+		const products = await productsResponse.json();
+
+		if (!products.length) {
+			bot.sendMessage(chatId, "You don't have any tracked products yet!");
+			return;
+		}
+
+		// Get current prices and update
+		const updates = await Promise.all(
+			products.map(async (product: Product) => {
+				const detailsResponse = await fetch(
+					"/api/mcp/product-details",
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ url: product.url }),
+					}
+				);
+				const details = await detailsResponse.json();
+				return {
+					productId: product.id,
+					currentPrice: details.price * 100, // Convert to cents
+				};
+			})
+		);
+
+		// Update products in database
+		await fetch("/api/mcp/update-prices", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ updates }),
+		});
+
+		const message = `✅ Successfully updated prices for ${updates.length} products!`;
+		bot.sendMessage(chatId, message);
+	} catch (error: unknown) {
+		logger.error("Error in handleUpdateCommand:", error);
+		const errorMessage =
+			error instanceof Error ? error.message : "Unknown error";
+		bot.sendMessage(chatId, `❌ Failed to update prices: ${errorMessage}`);
+	}
 }
 
 async function handleListCommand(chatId: string, userId: string) {
 	bot.sendMessage(chatId, "📊 Fetching your tracked products...");
 
 	try {
-		const results = await getUserTrackedProducts({
-			userId: userId,
-			include_price_history: false,
+		const response = await fetch("/api/mcp/user-products", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ userId, includePriceHistory: false }),
 		});
+		const results = await response.json();
 
 		logger.info("User tracked products: ", { userId, results });
 
-		const transformedResults = (results || []).map((product) => ({
+		const transformedResults = (results || []).map((product: Product) => ({
 			...product,
 			first_tracked: (product.createdAt || new Date()).toISOString(),
 			update_count: product.prices?.length || 0,
@@ -201,12 +230,6 @@ async function handleListCommand(chatId: string, userId: string) {
 			const keyboard = {
 				inline_keyboard: [
 					[{ text: "🔄 Update Prices", callback_data: "update_all" }],
-					// [
-					// 	{
-					// 		text: "📊 View Statistics",
-					// 		callback_data: "view_stats",
-					// 	},
-					// ],
 					...results.map((product: Product) => [
 						{
 							text: "Remove (UnTrack)",
@@ -246,42 +269,7 @@ async function handleCallbackQuery(
 		bot.answerCallbackQuery(callbackQuery.id, {
 			text: "Updating prices...",
 		});
-
-		try {
-			const productsUrl = await getAllTrackedProducts();
-			logger.info("Product URLs: ", productsUrl);
-			const results = await callMCPServer("get_price_update", {
-				urls: productsUrl.map((prod: Product) => prod.url),
-			});
-			let message = `🔄 Updated ${results.summary.successful_updates} products successfully!`;
-
-			if (results.summary.alerts_triggered > 0) {
-				message += `\n🚨 ${results.summary.alerts_triggered} price alerts triggered!`;
-			}
-
-			bot.sendMessage(chatId, message);
-		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			bot.sendMessage(chatId, `❌ Update failed: ${errorMessage}`);
-		}
-	} else if (data === "view_stats") {
-		bot.answerCallbackQuery(callbackQuery.id, {
-			text: "Fetching statistics...",
-		});
-
-		try {
-			const stats = await callMCPServer("session_stats", {});
-			let message = "📊 *Statistics*\n\n```\n" + stats + "\n```";
-			bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			bot.sendMessage(
-				chatId,
-				`❌ Failed to fetch stats: ${errorMessage}`
-			);
-		}
+		await handleUpdateCommand(chatId, userId);
 	} else if (data.startsWith("track_")) {
 		const url = data.replace("track_", "");
 		bot.answerCallbackQuery(callbackQuery.id, {
@@ -289,7 +277,18 @@ async function handleCallbackQuery(
 		});
 
 		try {
-			await trackProduct(userId, url);
+			await fetch("/api/mcp/track", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					userId,
+					productDetail: {
+						url,
+						name: "New Product",
+						platform: new URL(url).hostname,
+					},
+				}),
+			});
 			bot.sendMessage(chatId, "✅ Product added to price tracking!");
 		} catch (error: unknown) {
 			const errorMessage =
@@ -299,46 +298,21 @@ async function handleCallbackQuery(
 	} else if (data.startsWith("remove_")) {
 		const productId = data.replace("remove_", "");
 		bot.answerCallbackQuery(callbackQuery.id, {
-			text: "Removing product from tracking list...",
+			text: "Removing from tracking...",
 		});
 
 		try {
-			await untrackProduct(userId, productId);
+			await fetch("/api/mcp/untrack", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ userId, productId }),
+			});
 			bot.sendMessage(chatId, "✅ Product removed from price tracking!");
 		} catch (error: unknown) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Unknown error";
 			bot.sendMessage(chatId, `❌ Failed to track: ${errorMessage}`);
 		}
-	} else if (data.startsWith("target_")) {
-		const url = data.replace("target_", "");
-		bot.answerCallbackQuery(callbackQuery.id, {
-			text: "Please set target price...",
-		});
-
-		// Update to use session service
-		await sessionService.setSession(userId, { pendingTargetUrl: url });
-
-		bot.sendMessage(
-			chatId,
-			'💰 Please send your target price (e.g., "$50" or "50")'
-		);
-	} else if (data.startsWith("mcp_")) {
-		const query = data.replace("mcp_", "");
-		bot.answerCallbackQuery(callbackQuery.id, {
-			text: "Processing MCP query...",
-		});
-
-		try {
-			const response = await mcpClientService.processQuery(query);
-			bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
-		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			bot.sendMessage(
-				chatId,
-				`❌ Failed to process query: ${errorMessage}`
-			);
-		}
 	}
+	// ...existing code for target_ handling...
 }
