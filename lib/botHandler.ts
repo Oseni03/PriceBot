@@ -93,23 +93,20 @@ export async function handleUpdate(update: TelegramUpdate) {
 
 async function handleStartCommand(chatId: string, userId: string) {
 	// Create or retrieve user context
-	const user = await createOrUpdateUser(userId);
+	const user = await createOrUpdateUser(userId.toString());
 	// Update to use session service
 	await sessionService.setSession(userId, {});
 
 	try {
-		const welcomeMessage = `
-    🛒 *Welcome to E-commerce Price Assistant Bot!*
+		const welcomeMessage = `🛒 *Welcome to E-commerce Price Assistant Bot\!*
 
-    I can help you track product prices across multiple platforms and alert you when prices change.
-
-    *Available Commands:*
-    /track <product_url> - Track a product for price changes
+*Available Commands:*
+    /track - Track a product for price changes
     /list - View your tracked products
     /update - Update prices for your tracked products
     /help - Show this help message
 
-    *Supported Platforms:*
+*Supported Platforms:*
     • Amazon 🛍️
     • eBay 🏷️
     • Walmart 🛒
@@ -117,8 +114,7 @@ async function handleStartCommand(chatId: string, userId: string) {
     • Best Buy 💻
     • Home Depot 🔨
 
-    Just send me a product URL or use the commands above to get started!
-    `;
+Just send me a product URL or use the commands above to get started\!`;
 
 		bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
 	} catch (error) {
@@ -131,19 +127,17 @@ async function handleStartCommand(chatId: string, userId: string) {
 }
 
 async function handleHelpCommand(chatId: string) {
-	const helpMessage = `
-    🔧 *Bot Commands & Usage*
+	const helpMessage = `🔧 *Bot Commands & Usage*
 
     *Manage Tracking:*
-    /track <product_url> - Track a product for price changes
+    /track <url> - Track a product for price changes
     /list - View tracked products
     /update - Update all tracked prices
 
-    *Other:*
+*Other Commands:*
     /help - Show this message
 
-    *Tip:* You can also just send me a product URL directly! or type your query
-    `;
+*Tip:* You can send me a product URL directly or type your query to search products!`;
 
 	bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
 }
