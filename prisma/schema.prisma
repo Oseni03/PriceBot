@@ -15,11 +15,14 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  userId    String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  firstName    String?
+  username     String?
+  languageCode String?
+  products     Product[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Product {
@@ -42,7 +45,7 @@ model Price {
   amount    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   Product   Product? @relation(fields: [productId], references: [id])
   productId String?
 }

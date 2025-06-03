@@ -26,62 +26,53 @@ import Link from "next/link";
 export default function PriceTrackerLanding() {
 	const telegramBotURL = "https://t.me/PriceMorphBot";
 
-	const supportedPlatforms = [
-		{ name: "Amazon", logo: "/placeholder.svg?height=40&width=120" },
-		{ name: "Etsy", logo: "/placeholder.svg?height=40&width=120" },
-		{ name: "Best Buy", logo: "/placeholder.svg?height=40&width=120" },
-		{ name: "eBay", logo: "/placeholder.svg?height=40&width=120" },
-		{ name: "Walmart", logo: "/placeholder.svg?height=40&width=120" },
-		{ name: "Target", logo: "/placeholder.svg?height=40&width=120" },
-	];
-
 	const features = [
 		{
 			icon: <Globe className="h-6 w-6" />,
-			title: "Smart Product Search",
+			title: "AI-Powered Search",
 			description:
-				"Search and discover products across multiple ecommerce platforms from one place",
+				"Natural language search across multiple platforms. Just describe what you're looking for!",
 		},
 		{
 			icon: <ShoppingCart className="h-6 w-6" />,
-			title: "Detailed Product View",
+			title: "Smart Price Comparison",
 			description:
-				"View comprehensive product information, reviews, and price history charts",
+				"AI analyzes prices across platforms to find the best deals and predicts price trends",
 		},
 		{
 			icon: <TrendingDown className="h-6 w-6" />,
-			title: "Price Tracking",
+			title: "Intelligent Tracking",
 			description:
-				"Track unlimited products and set custom price alerts for your target prices",
+				"AI monitors price patterns and suggests the best time to buy",
 		},
 		{
-			icon: <Bell className="h-6 w-6" />,
-			title: "Real-time Notifications",
+			icon: <MessageCircle className="h-6 w-6" />,
+			title: "Conversational Shopping",
 			description:
-				"Get instant Telegram notifications when prices drop or reach your target price",
+				"Chat naturally with our AI to find, compare and track products",
 		},
 	];
 
 	const testimonials = [
 		{
 			name: "Sarah Johnson",
-			role: "Smart Shopper",
+			role: "Tech Enthusiast",
 			content:
-				"The product search feature is amazing! I can compare prices across all stores instantly and the notifications are spot-on.",
+				"The AI search is incredible! I just describe what I want, and it finds exactly what I'm looking for across all platforms.",
 			rating: 5,
 		},
 		{
 			name: "Mike Chen",
-			role: "Deal Hunter",
+			role: "Smart Shopper",
 			content:
-				"Love the detailed product views and price history charts. Saved $300 on electronics last month!",
+				"The price prediction feature helped me save $200 on my last purchase. The AI knew exactly when I should buy!",
 			rating: 5,
 		},
 		{
 			name: "Emily Davis",
-			role: "Budget Conscious",
+			role: "Online Shopper",
 			content:
-				"The Telegram notifications are so convenient. I get alerted immediately when my tracked items go on sale.",
+				"It's like having a personal shopping assistant. The natural conversations make shopping so much easier.",
 			rating: 5,
 		},
 	];
@@ -92,10 +83,10 @@ export default function PriceTrackerLanding() {
 			<header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
 				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
 					<div className="flex items-center gap-2">
-						<div className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
-							<TrendingDown className="h-5 w-5 text-white" />
+						<div className="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center">
+							<MessageCircle className="h-5 w-5 text-white" />
 						</div>
-						<span className="font-bold text-xl">PriceMorph</span>
+						<span className="font-bold text-xl">Morphe AI</span>
 					</div>
 					<nav className="hidden md:flex items-center gap-6">
 						<Link
@@ -131,25 +122,24 @@ export default function PriceTrackerLanding() {
 			</header>
 
 			{/* Hero Section */}
-			<section className="py-20 px-4 min-h-screen flex items-center justify-center">
+			<section className="py-20 px-4 min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
 				<div className="container mx-auto text-center max-w-4xl">
-					<Badge className="mb-4 bg-gray-100 text-gray-800 hover:bg-gray-100">
-						🚀 Track prices across 50+ stores
+					<Badge className="mb-4 bg-purple-100 text-purple-800 hover:bg-purple-100">
+						🤖 AI-Powered Shopping Assistant
 					</Badge>
 					<h1 className="text-5xl md:text-6xl font-bold mb-6 text-black">
-						Never Miss a Deal Again
+						Your AI Shopping Assistant
 					</h1>
 					<p className="text-xl text-gray-600 mb-8 leading-relaxed">
-						Search products across Amazon, Etsy, Best Buy, and more.
-						View detailed product information, track prices, and get
-						instant Telegram notifications when your target prices
-						are reached. Never miss a deal again!
+						Chat naturally with our AI to search products, compare
+						prices, and track deals across multiple platforms. Let
+						AI help you find the best time to buy!
 					</p>
 
 					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
 						<Button
 							size="lg"
-							className="bg-black hover:bg-gray-800 text-lg px-8 py-6"
+							className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
 							asChild
 						>
 							<Link
@@ -158,7 +148,7 @@ export default function PriceTrackerLanding() {
 								rel="noopener noreferrer"
 							>
 								<MessageCircle className="h-5 w-5 mr-2" />
-								Start Tracking on Telegram
+								Chat with Morphe AI
 								<ArrowRight className="h-5 w-5 ml-2" />
 							</Link>
 						</Button>
@@ -244,7 +234,7 @@ export default function PriceTrackerLanding() {
 								className="border-0 shadow-lg hover:shadow-xl transition-shadow"
 							>
 								<CardHeader className="text-center">
-									<div className="h-12 w-12 bg-black rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
+									<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
 										{feature.icon}
 									</div>
 									<CardTitle className="text-xl">
@@ -280,7 +270,7 @@ export default function PriceTrackerLanding() {
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 						{/* Product Search Feature */}
 						<div>
-							<div className="h-12 w-12 bg-black rounded-lg flex items-center justify-center mb-6">
+							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<Globe className="h-6 w-6 text-white" />
 							</div>
 							<h3 className="text-2xl font-bold mb-4">
@@ -311,23 +301,23 @@ export default function PriceTrackerLanding() {
 								</li>
 							</ul>
 						</div>
-						<div className="bg-gray-50 rounded-2xl p-8">
+						<div className="bg-purple-50 rounded-2xl p-8">
 							<div className="bg-white rounded-lg shadow-lg p-6">
 								<div className="flex items-center gap-3 mb-4">
-									<div className="h-8 w-8 bg-gray-200 rounded"></div>
-									<div className="h-4 bg-gray-200 rounded flex-1"></div>
+									<div className="h-8 w-8 bg-purple-200 rounded"></div>
+									<div className="h-4 bg-purple-200 rounded flex-1"></div>
 								</div>
 								<div className="space-y-3">
-									<div className="h-3 bg-gray-100 rounded"></div>
-									<div className="h-3 bg-gray-100 rounded w-3/4"></div>
-									<div className="h-3 bg-gray-100 rounded w-1/2"></div>
+									<div className="h-3 bg-purple-100 rounded"></div>
+									<div className="h-3 bg-purple-100 rounded w-3/4"></div>
+									<div className="h-3 bg-purple-100 rounded w-1/2"></div>
 								</div>
 							</div>
 						</div>
 
 						{/* Price Tracking Feature */}
 						<div className="lg:order-2">
-							<div className="bg-gray-50 rounded-2xl p-8">
+							<div className="bg-purple-50 rounded-2xl p-8">
 								<div className="bg-white rounded-lg shadow-lg p-6">
 									<div className="flex items-center justify-between mb-4">
 										<span className="text-sm text-gray-500">
@@ -335,7 +325,7 @@ export default function PriceTrackerLanding() {
 										</span>
 										<TrendingDown className="h-5 w-5 text-green-600" />
 									</div>
-									<div className="h-32 bg-gray-200 rounded mb-4"></div>
+									<div className="h-32 bg-purple-200 rounded mb-4"></div>
 									<div className="flex justify-between text-sm">
 										<span className="text-gray-500">
 											30 days ago
@@ -348,7 +338,7 @@ export default function PriceTrackerLanding() {
 							</div>
 						</div>
 						<div className="lg:order-1">
-							<div className="h-12 w-12 bg-black rounded-lg flex items-center justify-center mb-6">
+							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<TrendingDown className="h-6 w-6 text-white" />
 							</div>
 							<h3 className="text-2xl font-bold mb-4">
@@ -395,7 +385,7 @@ export default function PriceTrackerLanding() {
 
 					<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 						<div className="text-center">
-							<div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+							<div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
 								<Globe className="h-8 w-8 text-black" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">
@@ -408,7 +398,7 @@ export default function PriceTrackerLanding() {
 						</div>
 
 						<div className="text-center">
-							<div className="h-16 w-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+							<div className="h-16 w-16 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-6">
 								<ShoppingCart className="h-8 w-8 text-black" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">
@@ -421,7 +411,7 @@ export default function PriceTrackerLanding() {
 						</div>
 
 						<div className="text-center">
-							<div className="h-16 w-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-6">
+							<div className="h-16 w-16 bg-purple-300 rounded-full flex items-center justify-center mx-auto mb-6">
 								<TrendingDown className="h-8 w-8 text-black" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">
@@ -434,7 +424,7 @@ export default function PriceTrackerLanding() {
 						</div>
 
 						<div className="text-center">
-							<div className="h-16 w-16 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
+							<div className="h-16 w-16 bg-purple-400 rounded-full flex items-center justify-center mx-auto mb-6">
 								<Bell className="h-8 w-8 text-black" />
 							</div>
 							<h3 className="text-xl font-semibold mb-4">
@@ -497,19 +487,20 @@ export default function PriceTrackerLanding() {
 			</section>
 
 			{/* CTA Section */}
-			<section className="py-20 px-4 bg-black">
+			<section className="py-20 px-4 bg-purple-600">
 				<div className="container mx-auto text-center max-w-4xl">
 					<h2 className="text-4xl font-bold text-white mb-6">
-						Ready to Start Saving Money?
+						Ready to Shop Smarter with AI?
 					</h2>
-					<p className="text-xl text-gray-300 mb-8">
-						Join our Telegram bot now and never pay full price again
+					<p className="text-xl text-purple-100 mb-8">
+						Start chatting with Morphe AI and experience the future
+						of shopping
 					</p>
 
 					<div className="flex flex-col sm:flex-row gap-4 justify-center">
 						<Button
 							size="lg"
-							className="bg-white text-black hover:bg-gray-100 text-lg px-8 py-6"
+							className="bg-white text-black hover:bg-purple-100 text-lg px-8 py-6"
 							asChild
 						>
 							<Link
@@ -543,13 +534,13 @@ export default function PriceTrackerLanding() {
 				</div>
 			</section>
 
-			{/* Footer */}
+			{/* Footer with updated branding */}
 			<footer className="py-12 px-4 bg-gray-900 text-white">
 				<div className="container mx-auto max-w-6xl">
 					<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
 						<div>
 							<div className="flex items-center gap-2 mb-4">
-								<div className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
+								<div className="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center">
 									<TrendingDown className="h-5 w-5 text-white" />
 								</div>
 								<span className="font-bold text-xl">

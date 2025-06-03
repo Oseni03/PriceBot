@@ -14,7 +14,10 @@ interface TelegramUpdate {
 			id: string;
 		};
 		from: {
-			id: string;
+			id: number;
+			first_name?: string;
+			language_code?: string;
+			username?: string;
 		};
 		text: string;
 	};
@@ -32,6 +35,13 @@ interface TelegramUpdate {
 	};
 }
 
+export interface TelegramUser {
+	id: number;
+	first_name?: string;
+	language_code?: string;
+	username?: string;
+}
+
 export async function handleUpdate(update: TelegramUpdate) {
 	logger.info("Telegram webhook update: ", { data: update });
 	// Message handler
@@ -46,16 +56,16 @@ export async function handleUpdate(update: TelegramUpdate) {
 		if (text.startsWith("/")) {
 			switch (true) {
 				case /\/start/.test(text):
-					await handleStartCommand(chatId, userId);
+					await handleStartCommand(chatId, update.message.from);
 					break;
 				case /\/help/.test(text):
 					await handleHelpCommand(chatId);
 					break;
 				case /\/list/.test(text):
-					await handleListCommand(chatId, userId);
+					await handleListCommand(chatId, userId.toString());
 					break;
 				case /\/update/.test(text):
-					await handleUpdateCommand(chatId, userId);
+					await handleUpdateCommand(chatId, userId.toString());
 					break;
 				default:
 					bot.sendMessage(
@@ -98,11 +108,11 @@ export async function handleUpdate(update: TelegramUpdate) {
 	}
 }
 
-async function handleStartCommand(chatId: string, userId: string) {
+async function handleStartCommand(chatId: string, from: TelegramUser) {
 	// Create or retrieve user context
-	const user = await createOrUpdateUser(userId.toString());
+	const user = await createOrUpdateUser(from);
 	// Update to use session service
-	await sessionService.setSession(userId, {});
+	await sessionService.setSession(from.id.toString(), {});
 
 	try {
 		const welcomeMessage = `🛒 *Welcome to E-commerce Price Assistant Bot\!*
