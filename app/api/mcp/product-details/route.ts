@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { mcpClientService } from "@/lib/services/mcpClientService";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
 		const details = await mcpClientService.getProductDetails({ url });
 		return NextResponse.json(details);
 	} catch (error) {
-		console.error("Get product details error:", error);
+		logger.error("Get product details error:", error);
 		return NextResponse.json(
 			{ error: "Failed to get product details" },
 			{ status: 500 }

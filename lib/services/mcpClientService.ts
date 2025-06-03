@@ -1,30 +1,27 @@
 import OpenAI from "openai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import path from "path";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import {
 	MCPProductUpdate,
 	MCPTrackProduct,
 	MCPUntrackProduct,
 	MCPUserTrackedProduct,
 } from "@/types/mcp";
-import { z } from "zod";
-import {
-	getUserTrackedProducts,
-	trackProduct,
-	untrackProduct,
-	updateAllProducts,
-} from "@/services/products";
+import logger from "../logger";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
 if (!OPENAI_API_KEY) {
 	throw new Error("OPENAI_API_KEY is not set");
 }
 
+if (!NEXTAUTH_URL) {
+	throw new Error("NEXTAUTH_URL is not set");
+}
 export class MCPClientService {
 	private mcp: Client;
 	private llm: OpenAI;
-	private transport: StdioClientTransport | null = null;
+	private transport: SSEClientTransport | null = null;
 	public tools: any[] = [];
 	private static instance: MCPClientService;
 	private isInitialized = false;
@@ -52,129 +49,29 @@ export class MCPClientService {
 		}
 
 		try {
-			// Path to your MCP server script
-			const serverScriptPath = path.join(
-				process.cwd(),
-				"server",
-				"mcp-server.js"
+			this.transport = new SSEClientTransport(
+				new URL(`${NEXTAUTH_URL}/sse`)
 			);
-
-			this.transport = new StdioClientTransport({
-				command: process.execPath, // Node.js executable
-				args: [serverScriptPath],
-			});
-
 			await this.mcp.connect(this.transport);
 			const toolsResult = await this.mcp.listTools();
 
-			this.tools = [
-				...toolsResult.tools.map((tool) => ({
-					type: "function",
-					function: {
-						name: tool.name,
-						description: tool.description,
-						parameters: tool.inputSchema,
-					},
-				})),
-				{
-					type: "function",
-					function: {
-						name: "track_product",
-						description:
-							"Track a new product for a user. All prices are stored in cents/pennies to avoid floating point issues.",
-						parameters: z.object({
-							productDetail: z.object({
-								name: z.string().describe("Product name"),
-								platform: z
-									.enum([
-										"amazon",
-										"ebay",
-										"walmart",
-										"etsy",
-										"bestbuy",
-										"homedepot",
-										"zara",
-										"unknown",
-									])
-									.describe(
-										"The e-commerce platform where the product is listed"
-									),
-								target_price: z
-									.number()
-									.optional()
-									.describe(
-										"Target price for price alerts (in dollars)"
-									),
-								tracking_type: z
-									.enum(["price", "stock", "both"])
-									.default("price")
-									.describe(
-										"What to track: price changes, stock status, or both"
-									),
-								url: z
-									.string()
-									.url()
-									.describe("Product URL to track"),
-							}),
-							userId: z
-								.string()
-								.describe(
-									"User ID to associate the tracked product with"
-								),
-						}),
-					},
+			logger.info("Available tools:", { tools: toolsResult.tools });
+
+			this.tools = toolsResult.tools.map((tool) => ({
+				type: "function",
+				function: {
+					name: tool.name,
+					description: tool.description,
+					parameters: tool.inputSchema,
 				},
-				{
-					type: "function",
-					function: {
-						name: "get_user_tracked_products",
-						description:
-							"Get all products tracked by a specific user",
-						parameters: z.object({
-							include_price_history: z
-								.boolean()
-								.optional()
-								.default(false),
-							userId: z.string(),
-						}),
-					},
-				},
-				{
-					type: "function",
-					function: {
-						name: "untrack_product",
-						description: "Stop tracking a product for a user",
-						parameters: z.object({
-							productId: z.string(),
-							userId: z.string(),
-						}),
-					},
-				},
-				{
-					type: "function",
-					function: {
-						name: "update_product_prices",
-						description:
-							"Update prices for multiple tracked products",
-						parameters: z.object({
-							updates: z.array(
-								z.object({
-									currentPrice: z.number(),
-									productId: z.string(),
-								})
-							),
-						}),
-					},
-				},
-			];
+			}));
 
 			this.isInitialized = true;
-			console.log(
-				"MCP Client initialized with tools:",
-				this.tools.map((t) => t.function.name)
-			);
+			logger.info("MCP Client initialized with tools:", {
+				tools: this.tools,
+			});
 		} catch (error) {
-			console.error("Failed to initialize MCP Client:", error);
+			logger.error("Failed to initialize MCP Client:", error);
 			throw error;
 		}
 	}
@@ -194,7 +91,7 @@ export class MCPClientService {
 					{
 						role: "system",
 						content:
-							"You are a helpful assistant that can search for products, track prices, and provide product information across multiple e-commerce platforms.",
+							"You are a helpful e-commerce shopping assistant. Only use available tools when necessary for specific tasks like product searches, price tracking, or getting product details. For general questions, provide direct answers without using tools. Ask follow-up questions if you need clarification. If you cannot answer a query, simply state that you cannot answer it. Your response should be formatted as markdown.",
 					},
 					{
 						role: "user",
@@ -210,6 +107,8 @@ export class MCPClientService {
 				tools: this.tools,
 				tool_choice: "auto",
 			});
+
+			logger.info("LLM response:", { response });
 
 			let finalResponse = "";
 			const assistantMessage = response.choices[0]?.message;
@@ -268,7 +167,15 @@ export class MCPClientService {
 	// Direct tool calling methods for more granular control
 	async searchProducts(params: {
 		query: string;
-		platforms?: string[];
+		platforms?: (
+			| "amazon"
+			| "ebay"
+			| "walmart"
+			| "etsy"
+			| "bestbuy"
+			| "homedepot"
+			| "zara"
+		)[];
 		max_results?: number;
 	}) {
 		if (!this.isInitialized) {
@@ -299,7 +206,7 @@ export class MCPClientService {
 			});
 			return result.content;
 		} catch (error) {
-			console.error("Error getting product details:", error);
+			logger.error("Error getting product details:", error);
 			throw error;
 		}
 	}
@@ -310,13 +217,23 @@ export class MCPClientService {
 		}
 
 		try {
-			const result = await trackProduct(
-				params.userId,
-				params.productDetail.url
-			);
-			return result;
+			const result = await this.mcp.callTool({
+				name: "track_product",
+				arguments: {
+					userId: params.userId,
+					productDetail: {
+						...params.productDetail,
+						tracking_type:
+							params.productDetail.tracking_type || "price",
+					},
+				},
+			});
+			if (!Array.isArray(result.content) || !result.content[0]?.text) {
+				throw new Error("Unexpected response format from MCP tool");
+			}
+			return JSON.parse(result.content[0].text);
 		} catch (error) {
-			console.error("Error tracking product:", error);
+			logger.error("Error tracking product:", error);
 			throw error;
 		}
 	}
@@ -327,13 +244,19 @@ export class MCPClientService {
 		}
 
 		try {
-			const result = await untrackProduct(
-				params.userId,
-				params.productId
-			);
-			return result;
+			const result = await this.mcp.callTool({
+				name: "untrack_product",
+				arguments: {
+					userId: params.userId,
+					productId: params.productId,
+				},
+			});
+			if (!Array.isArray(result.content) || !result.content[0]?.text) {
+				throw new Error("Unexpected response format from MCP tool");
+			}
+			return JSON.parse(result.content[0].text);
 		} catch (error) {
-			console.error("Error untracking product:", error);
+			logger.error("Error untracking product:", error);
 			throw error;
 		}
 	}
@@ -344,10 +267,21 @@ export class MCPClientService {
 		}
 
 		try {
-			const result = await updateAllProducts(params.updates);
-			return result;
+			const result = await this.mcp.callTool({
+				name: "update_product_prices",
+				arguments: {
+					updates: params.updates.map((update) => ({
+						productId: update.productId,
+						currentPrice: Math.round(update.currentPrice),
+					})),
+				},
+			});
+			if (!Array.isArray(result.content) || !result.content[0]?.text) {
+				throw new Error("Unexpected response format from MCP tool");
+			}
+			return JSON.parse(result.content[0].text);
 		} catch (error) {
-			console.error("Error updating product prices:", error);
+			logger.error("Error updating product prices:", error);
 			throw error;
 		}
 	}
@@ -358,13 +292,19 @@ export class MCPClientService {
 		}
 
 		try {
-			const result = await getUserTrackedProducts({
-				userId: params.userId,
-				include_price_history: params.includePriceHistory || false,
+			const result = await this.mcp.callTool({
+				name: "get_user_tracked_products",
+				arguments: {
+					userId: params.userId,
+					includePriceHistory: params.includePriceHistory || false,
+				},
 			});
-			return result;
+			if (!Array.isArray(result.content) || !result.content[0]?.text) {
+				throw new Error("Unexpected response format from MCP tool");
+			}
+			return JSON.parse(result.content[0].text);
 		} catch (error) {
-			console.error("Error getting tracked products:", error);
+			logger.error("Error getting tracked products:", error);
 			throw error;
 		}
 	}

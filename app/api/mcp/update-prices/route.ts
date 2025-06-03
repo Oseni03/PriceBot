@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { mcpClientService } from "@/lib/services/mcpClientService";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
 		const result = await mcpClientService.updateProductPrices({ updates });
 		return NextResponse.json(result);
 	} catch (error) {
-		console.error("Update prices error:", error);
+		logger.error("Update prices error:", error);
 		return NextResponse.json(
 			{ error: "Failed to update prices" },
 			{ status: 500 }

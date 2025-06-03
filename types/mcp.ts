@@ -35,3 +35,13 @@ export interface MCPUserTrackedProduct {
 	userId: string;
 	includePriceHistory?: boolean;
 }
+
+export type Platform =
+	| "amazon"
+	| "bestbuy"
+	| "ebay"
+	| "etsy"
+	| "homedepot"
+	| "unknown"
+	| "walmart"
+	| "zara";

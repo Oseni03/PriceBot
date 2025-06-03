@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { mcpClientService } from "@/lib/services/mcpClientService";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 		});
 		return NextResponse.json(result);
 	} catch (error) {
-		console.error("Track product error:", error);
+		logger.error("Track product error:", error);
 		return NextResponse.json(
 			{ error: "Failed to track product" },
 			{ status: 500 }
