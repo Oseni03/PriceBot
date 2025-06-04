@@ -14,8 +14,8 @@ initializeServices().catch((error) => {
 });
 
 export const metadata: Metadata = {
-	title: "PriceMorph - Multi-platform E-commerce Price Tracker",
-	description: "PriceMorph - Multi-platform E-commerce Price Tracker",
+	title: "Morphe AI - E-commerce Multi-Platform AI Shopper",
+	description: "Morphe AI - E-commerce Multi-Platform AI Shopper",
 };
 
 export default function RootLayout({
