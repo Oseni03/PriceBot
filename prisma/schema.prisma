@@ -22,6 +22,7 @@ model User {
   username     String?
   languageCode String?
   products     Product[]
+  feedbacks    Feedback[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -64,7 +65,30 @@ model UserPlatform {
   @@unique([platform, userId])
 }
 
+model Feedback {
+  id          String      @id @default(uuid())
+  type        FeedbackType
+  message     String
+  status      FeedbackStatus @default(PENDING)
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 enum Platform {
   TELEGRAM
   WHATSAPP
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE
+}
+
+enum FeedbackStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
 }

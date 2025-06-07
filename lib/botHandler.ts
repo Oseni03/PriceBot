@@ -1,7 +1,6 @@
 import logger from "./logger";
 import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
 import { registerPlatform, getUserByPlatform } from "@/services/user";
-import { sessionService } from "./services/sessionService";
 import { type Product } from "@/types/products";
 import { BASE_URL } from "./constants";
 
@@ -26,7 +25,7 @@ interface TelegramUpdate {
 			};
 		};
 		from: {
-			id: string;
+			id: number;
 		};
 		data: string;
 		id: string;
@@ -67,6 +66,17 @@ export async function handleUpdate(update: TelegramUpdate) {
 					break;
 				case /\/update/.test(text):
 					await handleUpdateCommand(chatId, user.id);
+					break;
+				case /^\/bug (.+)/.test(text):
+					await handleFeedbackCommand(chatId, user.id, text, "BUG");
+					break;
+				case /^\/feature (.+)/.test(text):
+					await handleFeedbackCommand(
+						chatId,
+						user.id,
+						text,
+						"FEATURE"
+					);
 					break;
 				default:
 					bot.sendMessage(
@@ -121,10 +131,14 @@ async function handleStartCommand(chatId: string, from: TelegramUser) {
 		const welcomeMessage = `🛒 *Welcome to E-commerce Price Assistant Bot\!*
 
 *Available Commands:*
+    /start - Start the bot and see welcome message
     /track - Track a product for price changes
     /list - View your tracked products
     /update - Update prices for your tracked products
-    /help - Show this help message
+    /help - Show all commands and usage info
+    /remove - Remove a product from tracking
+    /target - Set a target price for tracked product
+    /search - Search for products across platforms
 
 *Supported Platforms:*
     • Amazon 🛍️
@@ -133,6 +147,10 @@ async function handleStartCommand(chatId: string, from: TelegramUser) {
     • Etsy 🎨
     • Best Buy 💻
     • Home Depot 🔨
+
+*Feedback & Support:*
+    /bug - Report a bug or issue
+    /feature - Submit a feature request
 
 Just send me a product URL or use the commands above to get started\!`;
 
@@ -149,15 +167,32 @@ Just send me a product URL or use the commands above to get started\!`;
 async function handleHelpCommand(chatId: string) {
 	const helpMessage = `🔧 *Bot Commands & Usage*
 
-    *Manage Tracking:*
+*Product Management:*
     /track <url> - Track a product for price changes
-    /list - View tracked products
-    /update - Update all tracked prices
+    /list - View all your tracked products
+    /update - Update prices for all tracked products
+    /remove - Remove a product from tracking
+    /target <product_id> <price> - Set target price alert
 
-*Other Commands:*
-    /help - Show this message
+*Search & Discovery:*
+    /search <query> - Search products across platforms
+    /start - Initialize or restart the bot
+    /help - Show this help message
 
-*Tip:* You can send me a product URL directly or type your query to search products!`;
+*Feedback & Support:*
+    /bug <description> - Report a bug or issue
+    /feature <description> - Submit a feature request
+
+*Usage Tips:*
+• Send any product URL directly to start tracking
+• Use /list to manage your tracked products
+• Set price alerts with /target command
+• Regular updates happen automatically
+
+*Price Alerts:* You'll receive notifications when:
+    • Prices drop below your target
+    • Significant price changes occur
+    • Daily summary of price changes`;
 
 	bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
 }
@@ -341,4 +376,49 @@ async function handleCallbackQuery(
 		}
 	}
 	// ...existing code for target_ handling...
+}
+
+// Add new feedback handler function
+async function handleFeedbackCommand(
+	chatId: string,
+	userId: string,
+	text: string,
+	type: "BUG" | "FEATURE"
+) {
+	const message = text.split(" ").slice(1).join(" "); // Remove command part
+	if (!message) {
+		bot.sendMessage(
+			chatId,
+			`❌ Please provide a ${type.toLowerCase()} description.\nExample: /${type.toLowerCase()} description here`
+		);
+		return;
+	}
+
+	try {
+		await fetch(`${BASE_URL}/api/feedback`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-User-ID": userId,
+			},
+			body: JSON.stringify({
+				type,
+				message,
+				userId,
+			}),
+		});
+
+		const responseMessage =
+			type === "BUG"
+				? "🐛 Thank you for reporting this bug! We'll look into it."
+				: "💡 Thank you for the feature suggestion! We'll consider it for future updates.";
+
+		bot.sendMessage(chatId, responseMessage);
+	} catch (error) {
+		logger.error(`Error handling ${type.toLowerCase()} feedback:`, error);
+		bot.sendMessage(
+			chatId,
+			`❌ Failed to submit ${type.toLowerCase()} feedback. Please try again later.`
+		);
+	}
 }
