@@ -3,6 +3,7 @@ import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
 import logger from "@/lib/logger";
 import { initializeServices } from "@/lib/init";
+import { AuthProvider } from "@/context/AuthContext";
 
 // Server-side initialization
 setupWebhook().catch((error) => {
@@ -25,7 +26,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body>{children}</body>
+			<body>
+				<AuthProvider>{children}</AuthProvider>
+			</body>
 		</html>
 	);
 }

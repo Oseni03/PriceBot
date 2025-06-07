@@ -1,6 +1,6 @@
 import logger from "./logger";
 import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
-import { createOrUpdateUser } from "@/services/user";
+import { createOrUpdateUser, registerPlatform } from "@/services/user";
 import { sessionService } from "./services/sessionService";
 import { type Product } from "@/types/products";
 
@@ -36,7 +36,7 @@ interface TelegramUpdate {
 }
 
 export interface TelegramUser {
-	id: number;
+	id: number | string;
 	first_name?: string;
 	language_code?: string;
 	username?: string;
@@ -110,7 +110,7 @@ export async function handleUpdate(update: TelegramUpdate) {
 
 async function handleStartCommand(chatId: string, from: TelegramUser) {
 	// Create or retrieve user context
-	const user = await createOrUpdateUser(from);
+	const user = await registerPlatform({ ...from, platform: "TELEGRAM" });
 	// Update to use session service
 	await sessionService.setSession(from.id.toString(), {});
 
