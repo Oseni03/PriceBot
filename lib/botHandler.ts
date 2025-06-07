@@ -1,11 +1,9 @@
 import logger from "./logger";
 import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
-import { createOrUpdateUser, registerPlatform } from "@/services/user";
+import { registerPlatform, getUserByPlatform } from "@/services/user";
 import { sessionService } from "./services/sessionService";
 import { type Product } from "@/types/products";
-
-// Add baseUrl constant
-const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+import { BASE_URL } from "./constants";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -47,10 +45,13 @@ export async function handleUpdate(update: TelegramUpdate) {
 	// Message handler
 	if (update.message) {
 		const chatId = update.message.chat.id;
-		const userId = update.message.from.id;
+		const platformId = update.message.from.id;
 		const text = update.message.text;
 
 		logger.info("Telegram message", update.message);
+
+		// Get the user's ID from their platform ID (Telegram ID)
+		const user = await getUserByPlatform(platformId, "TELEGRAM");
 
 		// Handle commands
 		if (text.startsWith("/")) {
@@ -62,10 +63,10 @@ export async function handleUpdate(update: TelegramUpdate) {
 					await handleHelpCommand(chatId);
 					break;
 				case /\/list/.test(text):
-					await handleListCommand(chatId, userId.toString());
+					await handleListCommand(chatId, user.id);
 					break;
 				case /\/update/.test(text):
-					await handleUpdateCommand(chatId, userId.toString());
+					await handleUpdateCommand(chatId, user.id);
 					break;
 				default:
 					bot.sendMessage(
@@ -75,15 +76,17 @@ export async function handleUpdate(update: TelegramUpdate) {
 			}
 			return;
 		}
-
 		// Handle any other text as a query to MCP
 		try {
-			const response = await fetch(`${baseUrl}/api/mcp/query`, {
+			const response = await fetch(`${BASE_URL}/api/mcp/query`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ query: text }),
+				body: JSON.stringify({
+					query: text,
+					userId: user.id,
+				}),
 			});
 
 			if (!response.ok) {
@@ -96,7 +99,7 @@ export async function handleUpdate(update: TelegramUpdate) {
 			logger.error("Error processing query:", error);
 			bot.sendMessage(
 				chatId,
-				"❌ Sorry, I couldn't process your request."
+				"❌ Sorry, I couldn't process your request. Please try registering with /start first."
 			);
 		}
 	}
@@ -111,8 +114,8 @@ export async function handleUpdate(update: TelegramUpdate) {
 async function handleStartCommand(chatId: string, from: TelegramUser) {
 	// Create or retrieve user context
 	const user = await registerPlatform({ ...from, platform: "TELEGRAM" });
-	// Update to use session service
-	await sessionService.setSession(from.id.toString(), {});
+	// // Update to use session service
+	// await sessionService.setSession(from.id.toString(), user);
 
 	try {
 		const welcomeMessage = `🛒 *Welcome to E-commerce Price Assistant Bot\!*
@@ -165,11 +168,13 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 	try {
 		// Get user's tracked products
 		const productsResponse = await fetch(
-			`${baseUrl}/api/mcp/user-products`,
+			`${BASE_URL}/api/mcp/user-products?userId=${userId}`,
 			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId }),
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					"X-User-ID": userId,
+				},
 			}
 		);
 		const products = await productsResponse.json();
@@ -183,7 +188,7 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 		const updates = await Promise.all(
 			products.map(async (product: Product) => {
 				const detailsResponse = await fetch(
-					`${baseUrl}/api/mcp/product-details`,
+					`${BASE_URL}/api/mcp/product-details`,
 					{
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
@@ -199,7 +204,7 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 		);
 
 		// Update products in database
-		await fetch(`${baseUrl}/api/mcp/update-prices`, {
+		await fetch(`${BASE_URL}/api/mcp/update-prices`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ updates }),
@@ -219,11 +224,16 @@ async function handleListCommand(chatId: string, userId: string) {
 	bot.sendMessage(chatId, "📊 Fetching your tracked products...");
 
 	try {
-		const response = await fetch(`${baseUrl}/api/mcp/user-products`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ userId, includePriceHistory: false }),
-		});
+		const response = await fetch(
+			`${BASE_URL}/api/mcp/user-products?userId=${userId}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					"X-User-ID": userId,
+				},
+			}
+		);
 		const results = await response.json();
 
 		logger.info("User tracked products: ", { userId, results });
@@ -276,31 +286,32 @@ async function handleCallbackQuery(
 	if (!callbackQuery) return;
 
 	const chatId = callbackQuery.message.chat.id;
-	const userId = callbackQuery.from.id;
+	const platformUserId = callbackQuery.from.id;
 	const data = callbackQuery.data;
+
+	// Get user's ID from their platform ID
+	const user = await getUserByPlatform(platformUserId, "TELEGRAM");
 
 	if (data === "update_all") {
 		bot.answerCallbackQuery(callbackQuery.id, {
 			text: "Updating prices...",
 		});
-		await handleUpdateCommand(chatId, userId);
+		await handleUpdateCommand(chatId, user.id);
 	} else if (data.startsWith("track_")) {
 		const url = data.replace("track_", "");
 		bot.answerCallbackQuery(callbackQuery.id, {
 			text: "Adding to tracking...",
 		});
-
 		try {
-			await fetch(`${baseUrl}/api/mcp/track`, {
+			await fetch(`${BASE_URL}/api/mcp/user-products`, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					"X-User-ID": user.id,
+				},
 				body: JSON.stringify({
-					userId,
-					productDetail: {
-						url,
-						name: "New Product",
-						platform: new URL(url).hostname,
-					},
+					url,
+					userId: user.id,
 				}),
 			});
 			bot.sendMessage(chatId, "✅ Product added to price tracking!");
@@ -314,13 +325,14 @@ async function handleCallbackQuery(
 		bot.answerCallbackQuery(callbackQuery.id, {
 			text: "Removing from tracking...",
 		});
-
 		try {
-			await fetch(`${baseUrl}/api/mcp/untrack`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId, productId }),
-			});
+			await fetch(
+				`${BASE_URL}/api/mcp/user-products?productId=${productId}&userId=${user.id}`,
+				{
+					method: "DELETE",
+					headers: { "Content-Type": "application/json" },
+				}
+			);
 			bot.sendMessage(chatId, "✅ Product removed from price tracking!");
 		} catch (error: unknown) {
 			const errorMessage =

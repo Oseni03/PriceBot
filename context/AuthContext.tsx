@@ -12,7 +12,15 @@ import { createOrUpdateUser } from "@/services/user";
 import { COOKIE_NAME } from "@/lib/constants";
 
 interface AuthContextType {
-	user: { id: string; email: string; username?: string } | null;
+	user: {
+		id: string;
+		email: string;
+		username?: string;
+		firstName?: string;
+		languageCode?: string;
+		createdAt?: Date;
+		updatedAt?: Date;
+	} | null;
 	loading: boolean;
 	signOut: () => Promise<void>;
 }

@@ -14,6 +14,13 @@ export interface NewPlatform {
 	platform: Platform;
 }
 
+export async function getUser(userId: string) {
+	return await prisma.user.findUnique({
+		where: { id: userId },
+		include: { platforms: true },
+	});
+}
+
 export async function createOrUpdateUser(user: User) {
 	return await prisma.user.upsert({
 		where: {
@@ -85,6 +92,37 @@ export async function registerPlatform(platform: NewPlatform) {
 	} catch (error) {
 		throw new Error(
 			`Failed to register platform: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`
+		);
+	}
+}
+
+export async function getUserByPlatform(
+	platformId: string | number,
+	platform: Platform
+) {
+	try {
+		const userPlatform = await prisma.userPlatform.findUnique({
+			where: {
+				platform_platformId: {
+					platform,
+					platformId: platformId.toString(),
+				},
+			},
+			include: {
+				user: true,
+			},
+		});
+
+		if (!userPlatform) {
+			throw new Error("User not found for platform");
+		}
+
+		return userPlatform.user;
+	} catch (error) {
+		throw new Error(
+			`Failed to get user by platform: ${
 				error instanceof Error ? error.message : "Unknown error"
 			}`
 		);

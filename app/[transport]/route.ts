@@ -372,18 +372,15 @@ const handler = createMcpHandler(
 					]),
 					target_price: z.number().optional(),
 					tracking_type: z
-						.enum(["price", "stock", "both"])
-						.default("price"),
+						.enum(["target_price", "price_change"])
+						.default("price_change"),
 					url: z.string().url(),
 				}),
 				userId: z.string(),
 			},
 			async ({ userId, productDetail }) => {
 				try {
-					const result = await trackProduct(
-						userId,
-						productDetail.url
-					);
+					const result = await trackProduct(userId, productDetail);
 					return {
 						content: [
 							{

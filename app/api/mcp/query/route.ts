@@ -4,7 +4,7 @@ import logger from "@/lib/logger";
 
 export async function POST(req: Request) {
 	try {
-		const { query } = await req.json();
+		const { query, userId } = await req.json();
 
 		if (!query) {
 			return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const response = await mcpClientService.processQuery(query);
+		const response = await mcpClientService.processQuery(query, userId);
 
 		return NextResponse.json(
 			{ response },

@@ -61,6 +61,7 @@ model UserPlatform {
   updatedAt   DateTime @updatedAt
 
   @@unique([platform, platformId])
+  @@unique([platform, userId])
 }
 
 enum Platform {

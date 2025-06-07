@@ -103,11 +103,7 @@ export default function PriceTrackerLanding() {
 							className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
 							asChild
 						>
-							<Link
-								href={TELEGRAM_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href={"/dashboard/chat"}>
 								<MessageCircle className="h-5 w-5 mr-2" />
 								Chat with Morphe AI
 								<ArrowRight className="h-5 w-5 ml-2" />
@@ -464,13 +460,9 @@ export default function PriceTrackerLanding() {
 							className="bg-white text-black hover:bg-purple-100 text-lg px-8 py-6"
 							asChild
 						>
-							<Link
-								href={TELEGRAM_URL}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href="/dashboard/chat">
 								<MessageCircle className="h-5 w-5 mr-2" />
-								Join Telegram Bot
+								Chat with Morphe AI
 								<ArrowRight className="h-5 w-5 ml-2" />
 							</Link>
 						</Button>

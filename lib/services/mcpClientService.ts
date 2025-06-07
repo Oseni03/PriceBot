@@ -9,9 +9,9 @@ import {
 } from "@/types/mcp";
 import logger from "../logger";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
-if (!OPENAI_API_KEY) {
+if (!DEEPSEEK_API_KEY) {
 	throw new Error("OPENAI_API_KEY is not set");
 }
 
@@ -28,10 +28,11 @@ export class MCPClientService {
 
 	private constructor() {
 		this.llm = new OpenAI({
-			apiKey: OPENAI_API_KEY,
+			baseURL: "https://api.deepseek.com",
+			apiKey: DEEPSEEK_API_KEY,
 		});
 		this.mcp = new Client({
-			name: "pricebot-mcp-client",
+			name: "morpheai",
 			version: "1.0.0",
 		});
 	}
@@ -76,11 +77,7 @@ export class MCPClientService {
 		}
 	}
 
-	async processQuery(
-		query: string,
-		userId?: string,
-		chatId?: string
-	): Promise<string> {
+	async processQuery(query: string, userId?: string): Promise<string> {
 		if (!this.isInitialized) {
 			await this.initialize();
 		}
@@ -90,19 +87,27 @@ export class MCPClientService {
 				[
 					{
 						role: "system",
-						content:
-							"You are a helpful e-commerce shopping assistant. Only use available tools when necessary for specific tasks like product searches, price tracking, or getting product details. For general questions, provide direct answers without using tools. Ask follow-up questions if you need clarification. If you cannot answer a query, simply state that you cannot answer it. Your response should be formatted as markdown.",
+						content: `You are a helpful and knowledgeable e-commerce shopping assistant. 
+                        Always provide clear, concise, and friendly answers in well-structured markdown, using lists, tables, and formatting where appropriate to enhance readability in a chat interface.
+
+                        - Use available tools only for specific tasks such as product search, price tracking, or retrieving product details.
+                        - For general questions, answer directly without using tools.
+                        - If you need more information, ask clarifying follow-up questions.
+                        - If you cannot answer a query, politely state that you cannot answer it.
+                        - Always format your responses as markdown, using bullet points, headings, tables, and code blocks when helpful.
+                        - When presenting product information, use tables or lists for clarity.
+                        - Keep your tone professional, approachable, and focused on helping the user make informed shopping decisions.`,
 					},
 					{
 						role: "user",
 						content: `${query}${
 							userId ? `\n\nUser ID: ${userId}` : ""
-						}${chatId ? `\nChat ID: ${chatId}` : ""}`,
+						}`,
 					},
 				];
 
 			const response = await this.llm.chat.completions.create({
-				model: "gpt-4-turbo-preview",
+				model: "deepseek-chat",
 				messages,
 				tools: this.tools,
 				tool_choice: "auto",
@@ -220,12 +225,13 @@ export class MCPClientService {
 			const result = await this.mcp.callTool({
 				name: "track_product",
 				arguments: {
-					userId: params.userId,
 					productDetail: {
 						...params.productDetail,
 						tracking_type:
-							params.productDetail.tracking_type || "price",
+							params.productDetail.tracking_type ||
+							"price_change",
 					},
+					userId: params.userId,
 				},
 			});
 			if (!Array.isArray(result.content) || !result.content[0]?.text) {
