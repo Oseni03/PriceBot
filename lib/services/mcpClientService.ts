@@ -291,7 +291,6 @@ export class MCPClientService {
 			throw error;
 		}
 	}
-
 	async getUserTrackedProducts(params: MCPUserTrackedProduct) {
 		if (!this.isInitialized) {
 			await this.initialize();
@@ -311,6 +310,42 @@ export class MCPClientService {
 			return JSON.parse(result.content[0].text);
 		} catch (error) {
 			logger.error("Error getting tracked products:", error);
+			throw error;
+		}
+	}
+
+	async getTopDeals(params: {
+		platforms?: (
+			| "amazon"
+			| "ebay"
+			| "walmart"
+			| "etsy"
+			| "bestbuy"
+			| "homedepot"
+			| "zara"
+		)[];
+		maxResults?: number;
+		minDiscountPercent?: number;
+	}) {
+		if (!this.isInitialized) {
+			await this.initialize();
+		}
+
+		try {
+			const result = await this.mcp.callTool({
+				name: "get_top_deals",
+				arguments: {
+					platforms: params.platforms,
+					maxResults: params.maxResults,
+					minDiscountPercent: params.minDiscountPercent,
+				},
+			});
+			if (!Array.isArray(result.content) || !result.content[0]?.text) {
+				throw new Error("Unexpected response format from MCP tool");
+			}
+			return JSON.parse(result.content[0].text);
+		} catch (error) {
+			logger.error("Error getting top deals:", error);
 			throw error;
 		}
 	}

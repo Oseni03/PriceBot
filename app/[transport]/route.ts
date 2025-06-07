@@ -1,7 +1,7 @@
 import { createMcpHandler } from "@vercel/mcp-adapter";
 import { z } from "zod";
 import axios from "axios";
-import { Scraper } from "@/lib/services/scraper";
+import { DealProduct, Scraper } from "@/lib/services/scraper";
 import type { Platform } from "@/types/mcp";
 import {
 	getUserTrackedProducts,
@@ -510,6 +510,144 @@ const handler = createMcpHandler(
 							{
 								type: "text",
 								text: `Error getting tracked products: ${
+									error instanceof Error
+										? error.message
+										: "Unknown error"
+								}`,
+							},
+						],
+					};
+				}
+			}
+		);
+
+		// Get top deals tool
+		server.tool(
+			"get_top_deals",
+			"Get top deals and discounts across all supported platforms",
+			{
+				platforms: z
+					.array(
+						z.enum([
+							"amazon",
+							"ebay",
+							"walmart",
+							"etsy",
+							"bestbuy",
+							"homedepot",
+							"zara",
+						])
+					)
+					.optional()
+					.default(["amazon", "ebay", "walmart"]),
+				maxResults: z.number().min(1).max(50).optional().default(10),
+				minDiscountPercent: z
+					.number()
+					.min(0)
+					.max(100)
+					.optional()
+					.default(10),
+			},
+			async ({ platforms, maxResults, minDiscountPercent }) => {
+				try {
+					const deals = [];
+
+					for (const platform of platforms) {
+						try {
+							let deals_url = "";
+							switch (platform) {
+								case "amazon":
+									deals_url = "https://www.amazon.com/deals";
+									break;
+								case "bestbuy":
+									deals_url =
+										"https://www.bestbuy.com/site/deals";
+									break;
+								case "ebay":
+									deals_url = "https://www.ebay.com/deals";
+									break;
+								case "etsy":
+									deals_url =
+										"https://www.etsy.com/sales-and-deals";
+									break;
+								case "homedepot":
+									deals_url =
+										"https://www.homedepot.com/deals";
+									break;
+								case "walmart":
+									deals_url = "https://www.walmart.com/deals";
+									break;
+								case "zara":
+									deals_url =
+										"https://www.zara.com/us/en/sale";
+									break;
+							}
+
+							const response = await axios({
+								data: {
+									format: "raw",
+									url: deals_url,
+									zone: unlocker_zone,
+								},
+								headers: api_headers(),
+								method: "POST",
+								responseType: "text",
+								url: "https://api.brightdata.com/request",
+							});
+
+							const baseUrl = new URL(deals_url).origin;
+							const parsedDeals = scraperService.parseDeals(
+								response.data,
+								platform,
+								baseUrl
+							);
+
+							// Only take the top maxResults deals that meet the minimum discount threshold
+							const filteredDeals = parsedDeals
+								.filter(
+									(deal: DealProduct) =>
+										deal.discountPercentage >=
+										minDiscountPercent
+								)
+								.slice(0, maxResults);
+
+							deals.push({
+								platform,
+								deals_url,
+								data: filteredDeals,
+							});
+						} catch (error) {
+							deals.push({
+								platform,
+								error:
+									error instanceof Error
+										? error.message
+										: "Unknown error",
+							});
+						}
+					}
+
+					return {
+						content: [
+							{
+								type: "text",
+								text: JSON.stringify(
+									{
+										timestamp: new Date().toISOString(),
+										deals,
+									},
+									null,
+									2
+								),
+							},
+						],
+					};
+				} catch (error) {
+					return {
+						content: [
+							{
+								type: "text",
+								text: `Error getting top deals: ${
 									error instanceof Error
 										? error.message
 										: "Unknown error"

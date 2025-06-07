@@ -2,6 +2,12 @@ import * as cheerio from "cheerio";
 
 import { type Platform } from "@/types/mcp";
 
+export interface DealProduct extends ScrapedProduct {
+	originalPrice: number;
+	discountPercentage: number;
+	dealEndsAt?: string;
+}
+
 interface ProductDetail extends ScrapedProduct {
 	availability?: string;
 	brand?: string;
@@ -29,6 +35,367 @@ interface ScrapedProduct {
 }
 
 export class Scraper {
+	parseDeals(
+		html: string,
+		platform: Platform,
+		baseUrl: string
+	): DealProduct[] {
+		const $ = cheerio.load(html);
+
+		switch (platform) {
+			case "amazon":
+				return this.parseAmazonDeals($, baseUrl);
+			case "bestbuy":
+				return this.parseBestBuyDeals($, baseUrl);
+			case "ebay":
+				return this.parseEbayDeals($, baseUrl);
+			case "etsy":
+				return this.parseEtsyDeals($, baseUrl);
+			case "homedepot":
+				return this.parseHomeDepotDeals($, baseUrl);
+			case "walmart":
+				return this.parseWalmartDeals($, baseUrl);
+			case "zara":
+				return this.parseZaraDeals($, baseUrl);
+			default:
+				return [];
+		}
+	}
+
+	private parseAmazonDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".DealGridItem-module__dealItem_2X_WR").each((_, element) => {
+			const $el = $(element);
+			const name = $el
+				.find(".DealGridItem-module__title_2mpCD")
+				.text()
+				.trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".a-price-whole")
+					.first()
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".a-text-price .a-offscreen")
+					.first()
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "amazon",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseBestBuyDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".deal-of-the-day").each((_, element) => {
+			const $el = $(element);
+			const name = $el.find(".product-title").text().trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".priceView-customer-price span")
+					.first()
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".pricing-price__regular-price")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "bestbuy",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseEbayDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".ebayui-dne-item-featured").each((_, element) => {
+			const $el = $(element);
+			const name = $el.find(".dne-itemtile-title").text().trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".dne-itemtile-price")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".dne-itemtile-original-price")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "ebay",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseEtsyDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".js-merch-stash-check-listing").each((_, element) => {
+			const $el = $(element);
+			const name = $el.find(".v2-listing-card__title").text().trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".currency-value")
+					.first()
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".search-collage-promotion-price")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "etsy",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseHomeDepotDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".product-pod--deal").each((_, element) => {
+			const $el = $(element);
+			const name = $el.find(".product-pod__title").text().trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".price__dollars")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".price__was-value")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "homedepot",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseWalmartDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$('[data-testid="list-view"] [data-item-id]').each((_, element) => {
+			const $el = $(element);
+			const name = $el
+				.find('[data-automation-id="product-title"]')
+				.text()
+				.trim();
+			const currentPrice = parseFloat(
+				$el
+					.find('[data-automation-id="sale-price"]')
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find('[data-automation-id="original-price"]')
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "walmart",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
+
+	private parseZaraDeals(
+		$: cheerio.CheerioAPI,
+		baseUrl: string
+	): DealProduct[] {
+		const deals: DealProduct[] = [];
+		$(".product-grid-product").each((_, element) => {
+			const $el = $(element);
+			const name = $el
+				.find(".product-grid-product-info__name")
+				.text()
+				.trim();
+			const currentPrice = parseFloat(
+				$el
+					.find(".price-current__amount")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const originalPrice = parseFloat(
+				$el
+					.find(".price-old__amount")
+					.text()
+					.replace(/[^0-9.]/g, "")
+			);
+			const href = $el.find("a").attr("href");
+			const url = href
+				? href.startsWith("http")
+					? href
+					: `${baseUrl}${href}`
+				: "";
+			const image = $el.find("img").attr("src");
+
+			if (name && currentPrice && originalPrice && url) {
+				deals.push({
+					currency: "USD",
+					image,
+					name,
+					platform: "zara",
+					price: currentPrice,
+					originalPrice,
+					discountPercentage: Math.round(
+						((originalPrice - currentPrice) / originalPrice) * 100
+					),
+					url,
+				});
+			}
+		});
+		return deals;
+	}
 	parseProductDetails(
 		html: string,
 		platform: Platform,
