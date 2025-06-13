@@ -25,21 +25,27 @@ export const Header = () => {
 					</div>
 					<span className="font-bold text-xl">Morphe AI</span>
 				</div>
-				<nav className="hidden md:flex items-center gap-6">
+				<nav className="hidden lg:flex items-center gap-8">
 					<Link
-						href="#features"
+						href="/#features"
 						className="text-gray-600 hover:text-gray-900"
 					>
 						Features
 					</Link>
 					<Link
-						href="#how-it-works"
+						href="/#how-it-works"
 						className="text-gray-600 hover:text-gray-900"
 					>
 						How it Works
 					</Link>
 					<Link
-						href="#testimonials"
+						href="/#pricing"
+						className="text-gray-600 hover:text-gray-900"
+					>
+						Pricing
+					</Link>
+					<Link
+						href="/#testimonials"
 						className="text-gray-600 hover:text-gray-900"
 					>
 						Reviews

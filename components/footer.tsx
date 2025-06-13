@@ -33,16 +33,22 @@ export const Footer = () => {
 									Features
 								</Link>
 							</li>
-							{/* <li>
-									<Link href="#" className="hover:text-white">
-										Pricing
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										API
-									</Link>
-								</li> */}
+							<li>
+								<Link
+									href="/#pricing"
+									className="hover:text-white"
+								>
+									Pricing
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/#how-it-works"
+									className="hover:text-white"
+								>
+									How it Works
+								</Link>
+							</li>
 						</ul>
 					</div>
 

@@ -9,18 +9,11 @@ import {
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { createOrUpdateUser } from "@/services/user";
-import { COOKIE_NAME } from "@/lib/constants";
+import { COOKIE_NAME, FREE_SIGNUP_CREDITS } from "@/lib/constants";
+import { User } from "@prisma/client";
 
 interface AuthContextType {
-	user: {
-		id: string;
-		email: string;
-		username?: string;
-		firstName?: string;
-		languageCode?: string;
-		createdAt?: Date;
-		updatedAt?: Date;
-	} | null;
+	user: User | null;
 	loading: boolean;
 	signOut: () => Promise<void>;
 }
@@ -28,7 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
 	user: null,
 	loading: true,
-	signOut: async () => {},
+	signOut: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -55,9 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					const token = await firebaseUser.getIdToken(true);
 
 					// Set the auth cookie with the token
-					document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${
-						60 * 60 * 24 * 7
-					}`; // 7 days
+					document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24 * 7
+						}`; // 7 days
 
 					// First upsert the user to ensure we have a record
 					const dbUser = await createOrUpdateUser({
@@ -68,14 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 						languageCode: "",
 						createdAt: new Date(),
 						updatedAt: new Date(),
+						credits: FREE_SIGNUP_CREDITS,
+						flutterwaveCustomerId: null
 					});
 
 					// Combine Firebase user with Prisma user data
-					setUser({
-						id: dbUser.id,
-						email: dbUser.email,
-						username: dbUser.username || undefined,
-					});
+					setUser(dbUser);
 				} catch (error) {
 					console.error("Error syncing user data:", error);
 					setUser(null);

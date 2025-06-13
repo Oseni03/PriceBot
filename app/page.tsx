@@ -21,9 +21,9 @@ import {
 	Globe,
 } from "lucide-react";
 import Link from "next/link";
-import { TELEGRAM_URL } from "@/lib/constants";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import SubscriptionPlans from "@/components/subscription-plans";
 
 export default function PriceTrackerLanding() {
 	const features = [
@@ -50,30 +50,6 @@ export default function PriceTrackerLanding() {
 			title: "Conversational Shopping",
 			description:
 				"Chat naturally with our AI to find, compare and track products",
-		},
-	];
-
-	const testimonials = [
-		{
-			name: "Sarah Johnson",
-			role: "Tech Enthusiast",
-			content:
-				"The AI search is incredible! I just describe what I want, and it finds exactly what I'm looking for across all platforms.",
-			rating: 5,
-		},
-		{
-			name: "Mike Chen",
-			role: "Smart Shopper",
-			content:
-				"The price prediction feature helped me save $200 on my last purchase. The AI knew exactly when I should buy!",
-			rating: 5,
-		},
-		{
-			name: "Emily Davis",
-			role: "Online Shopper",
-			content:
-				"It's like having a personal shopping assistant. The natural conversations make shopping so much easier.",
-			rating: 5,
 		},
 	];
 
@@ -396,51 +372,12 @@ export default function PriceTrackerLanding() {
 				</div>
 			</section>
 
-			{/* Testimonials */}
+			{/* Pricing Section */}
 			<section
-				id="testimonials"
-				className="py-20 px-4 bg-white min-h-screen flex items-center justify-center"
+				id="pricing"
+				className="py-20 px-4 bg-gray-50 min-h-screen flex items-center justify-center"
 			>
-				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl font-bold mb-4">
-							What Our Users Say
-						</h2>
-						<p className="text-xl text-gray-600">
-							Join thousands of satisfied customers
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{testimonials.map((testimonial, index) => (
-							<Card key={index} className="border-0 shadow-lg">
-								<CardContent className="pt-6">
-									<div className="flex mb-4">
-										{[...Array(testimonial.rating)].map(
-											(_, i) => (
-												<Star
-													key={i}
-													className="h-5 w-5 text-yellow-400 fill-current"
-												/>
-											)
-										)}
-									</div>
-									<p className="text-gray-600 mb-6">
-										"{testimonial.content}"
-									</p>
-									<div>
-										<div className="font-semibold">
-											{testimonial.name}
-										</div>
-										<div className="text-sm text-gray-500">
-											{testimonial.role}
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				</div>
+				<SubscriptionPlans />
 			</section>
 
 			{/* CTA Section */}

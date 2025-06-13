@@ -21,7 +21,7 @@ const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
 
 // Initialize in webhook mode for Next.js
 export async function setupWebhook() {
-	await bot.setWebHook(`${process.env.NEXTAUTH_URL}/api/webhook`);
+	await bot.setWebHook(`${process.env.NEXTAUTH_URL}/api/webhook/telegram`);
 }
 
 // Shared bot instance

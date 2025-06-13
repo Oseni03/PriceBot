@@ -1,11 +1,8 @@
 "use server";
 
-import { COOKIE_NAME } from "@/lib/constants";
 import { ProductError } from "../lib/errors/ProductError";
 import logger from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { verifyAuthToken } from "@/lib/firebase/admin";
 import { TrackingProduct } from "@/types/products";
 
 export async function getUserTrackedProducts({
@@ -154,6 +151,19 @@ export async function untrackProduct(userId: string, productId: string) {
 				userId,
 			},
 		});
+	} catch (error) {
+		logger.error("Failed to untrack product:", error);
+		if (error instanceof ProductError) throw error;
+		throw new ProductError("Failed to untrack product", "DATABASE_ERROR");
+	}
+}
+
+export async function getUserProducts(userId: string) {
+	try {
+		const trackedProducts = await prisma.product.count({
+			where: { userId },
+		});
+		return trackedProducts;
 	} catch (error) {
 		logger.error("Failed to untrack product:", error);
 		if (error instanceof ProductError) throw error;

@@ -42,6 +42,7 @@ export async function createOrUpdateUser(user: User) {
 					platformId: user.id.toString(),
 				},
 			},
+			credits: user.credits,
 		},
 		include: {
 			platforms: true,

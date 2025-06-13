@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mcpClientService } from "@/lib/services/mcpClientService";
 import logger from "@/lib/logger";
+import { CreditService } from "@/services/credits";
 
 export async function POST(req: Request) {
 	try {
@@ -12,6 +13,8 @@ export async function POST(req: Request) {
 				{ status: 400 }
 			);
 		}
+
+		await CreditService.useCredits(userId, "AI_CHAT");
 
 		const response = await mcpClientService.processQuery(query, userId);
 

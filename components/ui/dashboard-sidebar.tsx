@@ -1,6 +1,12 @@
 "use client";
 
-import { MessageSquare, List, Share2, MessageCircle } from "lucide-react";
+import {
+	MessageSquare,
+	List,
+	Share2,
+	MessageCircle,
+	CreditCard,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,6 +25,11 @@ const navigation = [
 		name: "Integrations",
 		href: "/dashboard/integrations",
 		icon: Share2,
+	},
+	{
+		name: "Subscription",
+		href: "/dashboard/subscription",
+		icon: CreditCard,
 	},
 ];
 
