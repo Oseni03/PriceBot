@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Message } from "@/hooks/use-chat";
+import { Message } from "@prisma/client";
 
 function formatMarkdown(text: string) {
 	return text.split("\n").map((line) => {
@@ -31,7 +31,7 @@ function formatMarkdown(text: string) {
 
 export function MessageContent({ message }: { message: Message }) {
 	// If it's a user message, display as plain text
-	if (message.sender === "user") {
+	if (message.sender === "USER") {
 		return <div className="whitespace-pre-wrap">{message.text}</div>;
 	}
 
@@ -46,7 +46,7 @@ export function MessageContent({ message }: { message: Message }) {
 					className={cn(
 						"min-w-0",
 						line.startsWith("<code>") &&
-							"font-mono bg-muted/50 px-1.5 py-0.5 rounded",
+						"font-mono bg-muted/50 px-1.5 py-0.5 rounded",
 						!line && "h-4" // Add spacing for empty lines
 					)}
 					dangerouslySetInnerHTML={{ __html: line }}

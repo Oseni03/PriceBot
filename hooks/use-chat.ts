@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { BASE_URL } from "@/lib/constants";
+import { BASE_URL, CREDIT_COSTS } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
-
-export interface Message {
-	id: string;
-	text: string;
-	sender: "user" | "bot";
-	timestamp: Date;
-}
+import { Message } from "@prisma/client";
+import { createMessage } from "@/services/messages";
 
 export function useChat() {
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -17,48 +12,57 @@ export function useChat() {
 	const { user } = useAuth();
 
 	const sendMessage = useCallback(async (text: string) => {
-		if (!text.trim()) return;
+		if (!text.trim() || !user) return;
 
-		const userMessage: Message = {
-			id: Date.now().toString(),
-			text,
-			sender: "user",
-			timestamp: new Date(),
-		};
+		const userMessage: Message = await createMessage(text, "USER", user.id);
 
 		setMessages((prev) => [...prev, userMessage]);
 
 		try {
 			setIsLoading(true);
 			if (user) {
-				const response = await fetch(`${BASE_URL}/api/mcp/query`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ query: text, userId: user.id }),
-				});
+				let botMessage: Message;
 
-				if (!response.ok) {
-					throw new Error("Failed to process query");
+				if (user.credits < CREDIT_COSTS.AI_CHAT) {
+					botMessage = {
+						id: (Date.now() + 1).toString(),
+						text: "Top up your credit to continue chat",
+						sender: "BOT",
+						userId: "",
+						timestamp: new Date(),
+						updatedAt: new Date(),
+					};
+				} else {
+					const response = await fetch(`${BASE_URL}/api/mcp/query`, {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ query: text, userId: user.id }),
+					});
+
+					if (!response.ok) {
+						throw new Error("Failed to process query");
+					}
+
+					const data = await response.json();
+
+					botMessage = await createMessage(
+						data.response,
+						"BOT",
+						user.id
+					);
 				}
-
-				const data = await response.json();
-
-				const botMessage: Message = {
-					id: (Date.now() + 1).toString(),
-					text: data.response,
-					sender: "bot",
-					timestamp: new Date(),
-				};
 
 				setMessages((prev) => [...prev, botMessage]);
 			} else {
 				const unauthorizedMessage: Message = {
 					id: (Date.now() + 1).toString(),
 					text: "Sign in to use chat feature",
-					sender: "bot",
+					sender: "BOT",
+					userId: "",
 					timestamp: new Date(),
+					updatedAt: new Date(),
 				};
 
 				setMessages((prev) => [...prev, unauthorizedMessage]);
@@ -67,8 +71,10 @@ export function useChat() {
 			const errorMessage: Message = {
 				id: (Date.now() + 1).toString(),
 				text: "Sorry, I encountered an error processing your request. Please try again.",
-				sender: "bot",
+				sender: "BOT",
+				userId: "",
 				timestamp: new Date(),
+				updatedAt: new Date(),
 			};
 			setMessages((prev) => [...prev, errorMessage]);
 		} finally {

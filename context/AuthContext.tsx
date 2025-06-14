@@ -10,10 +10,10 @@ import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { createOrUpdateUser } from "@/services/user";
 import { COOKIE_NAME, FREE_SIGNUP_CREDITS } from "@/lib/constants";
-import { User } from "@prisma/client";
+import { User, UserPlatform } from "@prisma/client";
 
 interface AuthContextType {
-	user: User | null;
+	user: (User & { platforms: UserPlatform[] }) | null;
 	loading: boolean;
 	signOut: () => Promise<void>;
 }
@@ -48,8 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 					const token = await firebaseUser.getIdToken(true);
 
 					// Set the auth cookie with the token
-					document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24 * 7
-						}`; // 7 days
+					document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
 
 					// First upsert the user to ensure we have a record
 					const dbUser = await createOrUpdateUser({
