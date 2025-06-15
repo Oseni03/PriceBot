@@ -1,90 +1,115 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { BASE_URL, CREDIT_COSTS } from "@/lib/constants";
 import { useAuth } from "@/context/AuthContext";
 import { Message } from "@prisma/client";
-import { createMessage } from "@/services/messages";
+import {
+	createMessage,
+	deleteMessages,
+	getMessages,
+} from "@/services/messages";
 
 export function useChat() {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const { user } = useAuth();
 
-	const sendMessage = useCallback(async (text: string) => {
-		if (!text.trim() || !user) return;
+	// Load previous messages when user changes
+	useEffect(() => {
+		if (user) {
+			fetchMessages();
+		} else {
+			setMessages([]);
+		}
+	}, [user]);
 
-		const userMessage: Message = await createMessage(text, "USER", user.id);
-
-		setMessages((prev) => [...prev, userMessage]);
+	const fetchMessages = async () => {
+		if (!user) return;
 
 		try {
-			setIsLoading(true);
-			if (user) {
-				let botMessage: Message;
+			const messages = await getMessages(user.id);
+			setMessages(messages);
+		} catch (error) {
+			console.error("Error fetching messages:", error);
+		}
+	};
 
+	const sendMessage = useCallback(
+		async (text: string) => {
+			if (!text.trim() || !user) return;
+
+			try {
+				setIsLoading(true);
+
+				// Create user message
+				const userMessage: Message = await createMessage(
+					text,
+					"USER",
+					user.id
+				);
+				setMessages((prev) => [...prev, userMessage]);
+
+				// Check credits
 				if (user.credits < CREDIT_COSTS.AI_CHAT) {
-					botMessage = {
-						id: (Date.now() + 1).toString(),
-						text: "Top up your credit to continue chat",
-						sender: "BOT",
-						userId: "",
-						timestamp: new Date(),
-						updatedAt: new Date(),
-					};
-				} else {
-					const response = await fetch(`${BASE_URL}/api/mcp/query`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({ query: text, userId: user.id }),
-					});
-
-					if (!response.ok) {
-						throw new Error("Failed to process query");
-					}
-
-					const data = await response.json();
-
-					botMessage = await createMessage(
-						data.response,
+					const botMessage: Message = await createMessage(
+						"⚠️ You don't have enough credits to continue chatting. Please top up your credits to continue.",
 						"BOT",
 						user.id
 					);
+					setMessages((prev) => [...prev, botMessage]);
+					return;
 				}
 
+				// Send to MCP
+				const response = await fetch(`${BASE_URL}/api/mcp/query`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						query: text,
+						userId: user.id,
+						messages: messages.slice(-5),
+					}),
+				});
+
+				if (!response.ok) {
+					throw new Error("Failed to process query");
+				}
+
+				const data = await response.json();
+				const botMessage = await createMessage(
+					data.response,
+					"BOT",
+					user.id
+				);
 				setMessages((prev) => [...prev, botMessage]);
-			} else {
-				const unauthorizedMessage: Message = {
-					id: (Date.now() + 1).toString(),
-					text: "Sign in to use chat feature",
-					sender: "BOT",
-					userId: "",
-					timestamp: new Date(),
-					updatedAt: new Date(),
-				};
-
-				setMessages((prev) => [...prev, unauthorizedMessage]);
+			} catch (error) {
+				console.error("Error in chat:", error);
+				const errorMessage = await createMessage(
+					"Sorry, I encountered an error processing your request. Please try again.",
+					"BOT",
+					user.id
+				);
+				setMessages((prev) => [...prev, errorMessage]);
+			} finally {
+				setIsLoading(false);
 			}
-		} catch (error) {
-			const errorMessage: Message = {
-				id: (Date.now() + 1).toString(),
-				text: "Sorry, I encountered an error processing your request. Please try again.",
-				sender: "BOT",
-				userId: "",
-				timestamp: new Date(),
-				updatedAt: new Date(),
-			};
-			setMessages((prev) => [...prev, errorMessage]);
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
+		},
+		[user]
+	);
 
-	const clearMessages = useCallback(() => {
-		setMessages([]);
-	}, []);
+	const clearMessages = useCallback(async () => {
+		if (!user) return;
+
+		try {
+			await deleteMessages(user.id);
+			setMessages([]);
+		} catch (error) {
+			console.error("Error clearing messages:", error);
+		}
+	}, [user]);
 
 	return {
 		messages,

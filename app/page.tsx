@@ -24,6 +24,22 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import SubscriptionPlans from "@/components/subscription-plans";
+import { motion } from "framer-motion";
+
+// Animation variants
+const fadeInUp = {
+	initial: { opacity: 0, y: 20 },
+	animate: { opacity: 1, y: 0 },
+	transition: { duration: 0.5 }
+};
+
+const staggerContainer = {
+	animate: {
+		transition: {
+			staggerChildren: 0.1
+		}
+	}
+};
 
 export default function PriceTrackerLanding() {
 	const features = [
@@ -59,21 +75,47 @@ export default function PriceTrackerLanding() {
 			<Header />
 
 			{/* Hero Section */}
-			<section className="py-20 px-4 min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+			<motion.section
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 0.8 }}
+				className="py-20 px-4 min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white"
+			>
 				<div className="container mx-auto text-center max-w-4xl">
-					<Badge className="mb-4 bg-purple-100 text-purple-800 hover:bg-purple-100">
-						🤖 AI-Powered Shopping Assistant
-					</Badge>
-					<h1 className="text-5xl md:text-6xl font-bold mb-6 text-black">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.2 }}
+					>
+						<Badge className="mb-4 bg-purple-100 text-purple-800 hover:bg-purple-100">
+							🤖 AI-Powered Shopping Assistant
+						</Badge>
+					</motion.div>
+					<motion.h1
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.4 }}
+						className="text-5xl md:text-6xl font-bold mb-6 text-black"
+					>
 						Your AI Shopping Assistant
-					</h1>
-					<p className="text-xl text-gray-600 mb-8 leading-relaxed">
+					</motion.h1>
+					<motion.p
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.6 }}
+						className="text-xl text-gray-600 mb-8 leading-relaxed"
+					>
 						Chat naturally with our AI to search products, compare
 						prices, and track deals across multiple platforms. Let
 						AI help you find the best time to buy!
-					</p>
+					</motion.p>
 
-					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.8 }}
+						className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+					>
 						<Button
 							size="lg"
 							className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
@@ -93,7 +135,7 @@ export default function PriceTrackerLanding() {
 							<Globe className="h-5 w-5 mr-2" />
 							View Demo
 						</Button> */}
-					</div>
+					</motion.div>
 
 					{/* Supported Platforms */}
 					{/* <div className="mb-16">
@@ -142,15 +184,25 @@ export default function PriceTrackerLanding() {
 						</div>
 					</div> */}
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Features Section */}
-			<section
+			<motion.section
 				id="features"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 bg-white min-h-screen flex items-center justify-center"
 			>
 				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							Why Choose PriceMorph?
 						</h2>
@@ -158,51 +210,77 @@ export default function PriceTrackerLanding() {
 							Powerful features that make price tracking
 							effortless
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+					>
 						{features.map((feature, index) => (
-							<Card
+							<motion.div
 								key={index}
-								className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+								variants={fadeInUp}
 							>
-								<CardHeader className="text-center">
-									<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
-										{feature.icon}
-									</div>
-									<CardTitle className="text-xl">
-										{feature.title}
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<CardDescription className="text-center text-gray-600">
-										{feature.description}
-									</CardDescription>
-								</CardContent>
-							</Card>
+								<Card
+									className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+								>
+									<CardHeader className="text-center">
+										<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
+											{feature.icon}
+										</div>
+										<CardTitle className="text-xl">
+											{feature.title}
+										</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<CardDescription className="text-center text-gray-600">
+											{feature.description}
+										</CardDescription>
+									</CardContent>
+								</Card>
+							</motion.div>
 						))}
-					</div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Features Showcase */}
-			<section
+			<motion.section
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 min-h-screen flex items-center justify-center"
 				id="features"
 			>
 				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							Powerful Features at Your Fingertips
 						</h2>
 						<p className="text-xl text-gray-600">
 							Everything you need to become a smart shopper
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+					>
 						{/* Product Search Feature */}
-						<div>
+						<motion.div variants={fadeInUp}>
 							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<Globe className="h-6 w-6 text-white" />
 							</div>
@@ -233,8 +311,11 @@ export default function PriceTrackerLanding() {
 									<span>Real-time price comparison</span>
 								</li>
 							</ul>
-						</div>
-						<div className="bg-purple-50 rounded-2xl p-8">
+						</motion.div>
+						<motion.div
+							variants={fadeInUp}
+							className="bg-purple-50 rounded-2xl p-8"
+						>
 							<div className="bg-white rounded-lg shadow-lg p-6">
 								<div className="flex items-center gap-3 mb-4">
 									<div className="h-8 w-8 bg-purple-200 rounded"></div>
@@ -246,10 +327,13 @@ export default function PriceTrackerLanding() {
 									<div className="h-3 bg-purple-100 rounded w-1/2"></div>
 								</div>
 							</div>
-						</div>
+						</motion.div>
 
 						{/* Price Tracking Feature */}
-						<div className="lg:order-2">
+						<motion.div
+							variants={fadeInUp}
+							className="lg:order-2"
+						>
 							<div className="bg-purple-50 rounded-2xl p-8">
 								<div className="bg-white rounded-lg shadow-lg p-6">
 									<div className="flex items-center justify-between mb-4">
@@ -269,8 +353,11 @@ export default function PriceTrackerLanding() {
 									</div>
 								</div>
 							</div>
-						</div>
-						<div className="lg:order-1">
+						</motion.div>
+						<motion.div
+							variants={fadeInUp}
+							className="lg:order-1"
+						>
 							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<TrendingDown className="h-6 w-6 text-white" />
 							</div>
@@ -296,102 +383,133 @@ export default function PriceTrackerLanding() {
 									<span>Price drop predictions</span>
 								</li>
 							</ul>
-						</div>
-					</div>
+						</motion.div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* How It Works */}
-			<section
+			<motion.section
 				id="how-it-works"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 min-h-screen flex items-center justify-center"
 			>
 				<div className="container mx-auto max-w-4xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							How It Works
 						</h2>
 						<p className="text-xl text-gray-600">
 							Get started in 3 simple steps
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-								<Globe className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								1. Search Products
-							</h3>
-							<p className="text-gray-600">
-								Search for any product across Amazon, Etsy, Best
-								Buy, and other supported stores
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-6">
-								<ShoppingCart className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								2. View Details
-							</h3>
-							<p className="text-gray-600">
-								See product information, current prices, and
-								historical price trends
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-300 rounded-full flex items-center justify-center mx-auto mb-6">
-								<TrendingDown className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								3. Track Prices
-							</h3>
-							<p className="text-gray-600">
-								Add products to your watchlist and set your
-								desired target prices
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-400 rounded-full flex items-center justify-center mx-auto mb-6">
-								<Bell className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								4. Get Notified
-							</h3>
-							<p className="text-gray-600">
-								Receive instant Telegram alerts when prices drop
-								to your target
-							</p>
-						</div>
-					</div>
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 md:grid-cols-4 gap-8"
+					>
+						{[
+							{
+								icon: <Globe className="h-8 w-8 text-black" />,
+								title: "1. Search Products",
+								description: "Search for any product across Amazon, Etsy, Best Buy, and other supported stores"
+							},
+							{
+								icon: <ShoppingCart className="h-8 w-8 text-black" />,
+								title: "2. View Details",
+								description: "See product information, current prices, and historical price trends"
+							},
+							{
+								icon: <TrendingDown className="h-8 w-8 text-black" />,
+								title: "3. Track Prices",
+								description: "Add products to your watchlist and set your desired target prices"
+							},
+							{
+								icon: <Bell className="h-8 w-8 text-black" />,
+								title: "4. Get Notified",
+								description: "Receive instant Telegram alerts when prices drop to your target"
+							}
+						].map((step, index) => (
+							<motion.div
+								key={index}
+								variants={fadeInUp}
+								className="text-center"
+							>
+								<div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+									{step.icon}
+								</div>
+								<h3 className="text-xl font-semibold mb-4">
+									{step.title}
+								</h3>
+								<p className="text-gray-600">
+									{step.description}
+								</p>
+							</motion.div>
+						))}
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Pricing Section */}
-			<section
+			<motion.section
 				id="pricing"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 bg-gray-50 min-h-screen flex items-center justify-center"
 			>
 				<SubscriptionPlans />
-			</section>
+			</motion.section>
 
 			{/* CTA Section */}
-			<section className="py-20 px-4 bg-purple-600">
+			<motion.section
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
+				className="py-20 px-4 bg-purple-600"
+			>
 				<div className="container mx-auto text-center max-w-4xl">
-					<h2 className="text-4xl font-bold text-white mb-6">
+					<motion.h2
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-4xl font-bold text-white mb-6"
+					>
 						Ready to Shop Smarter with AI?
-					</h2>
-					<p className="text-xl text-purple-100 mb-8">
+					</motion.h2>
+					<motion.p
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.2 }}
+						className="text-xl text-purple-100 mb-8"
+					>
 						Start chatting with Morphe AI and experience the future
 						of shopping
-					</p>
+					</motion.p>
 
-					<div className="flex flex-col sm:flex-row gap-4 justify-center">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.4 }}
+						className="flex flex-col sm:flex-row gap-4 justify-center"
+					>
 						<Button
 							size="lg"
 							className="bg-white text-black hover:bg-purple-100 text-lg px-8 py-6"
@@ -411,18 +529,24 @@ export default function PriceTrackerLanding() {
               <Smartphone className="h-5 w-5 mr-2" />
               Download App
             </Button> */}
-					</div>
+					</motion.div>
 
-					<div className="mt-8 flex items-center justify-center gap-4 text-gray-300">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.6 }}
+						className="mt-8 flex items-center justify-center gap-4 text-gray-300"
+					>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>Free to use</span>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>No credit card required</span>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>Cancel anytime</span>
-					</div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Footer with updated branding */}
 			<Footer />

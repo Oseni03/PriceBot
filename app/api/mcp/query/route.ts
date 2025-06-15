@@ -5,7 +5,7 @@ import { CreditService } from "@/services/credits";
 
 export async function POST(req: Request) {
 	try {
-		const { query, userId } = await req.json();
+		const { query, userId, previousMessages } = await req.json();
 
 		if (!query) {
 			return NextResponse.json(
@@ -16,7 +16,11 @@ export async function POST(req: Request) {
 
 		await CreditService.useCredits(userId, "AI_CHAT");
 
-		const response = await mcpClientService.processQuery(query, userId);
+		const response = await mcpClientService.processQuery(
+			query,
+			userId,
+			previousMessages
+		);
 
 		return NextResponse.json(
 			{ response },

@@ -2,7 +2,8 @@ import logger from "./logger";
 import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
 import { registerPlatform, getUserByPlatform } from "@/services/user";
 import { type Product } from "@/types/products";
-import { BASE_URL } from "./constants";
+import { BASE_URL, CREDIT_COSTS } from "./constants";
+import { createMessage, getMessages } from "@/services/messages";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -88,6 +89,21 @@ export async function handleUpdate(update: TelegramUpdate) {
 		}
 		// Handle any other text as a query to MCP
 		try {
+			// Get previous messages for context
+			const previousMessages = await getMessages(user.id);
+
+			// Send typing indicator
+			await bot.sendChatAction(chatId, "typing");
+
+			if (user.credits < CREDIT_COSTS.AI_CHAT) {
+				bot.sendMessage(
+					chatId,
+					"⚠️ You don't have enough credits to continue chatting. Please top up your credits to continue.",
+					{ parse_mode: "MarkdownV2" }
+				);
+				return;
+			}
+
 			const response = await fetch(`${BASE_URL}/api/mcp/query`, {
 				method: "POST",
 				headers: {
@@ -96,6 +112,7 @@ export async function handleUpdate(update: TelegramUpdate) {
 				body: JSON.stringify({
 					query: text,
 					userId: user.id,
+					previousMessages: previousMessages.slice(-5), // Keep last 5 messages for context
 				}),
 			});
 
@@ -104,12 +121,28 @@ export async function handleUpdate(update: TelegramUpdate) {
 			}
 
 			const data = await response.json();
-			bot.sendMessage(chatId, data.response, { parse_mode: "Markdown" });
+
+			// Format the response for Telegram's markdown v2
+			const formattedResponse = formatTelegramMessage(data.response);
+
+			await createMessage(formattedResponse, "BOT", user.id);
+
+			// Split long messages if needed (Telegram has a 4096 character limit)
+			const messageChunks = splitMessage(formattedResponse);
+
+			for (const chunk of messageChunks) {
+				await bot.sendMessage(chatId, chunk, {
+					parse_mode: "MarkdownV2",
+					disable_web_page_preview: true,
+				});
+			}
 		} catch (error) {
 			logger.error("Error processing query:", error);
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
 			bot.sendMessage(
 				chatId,
-				"❌ Sorry, I couldn't process your request. Please try registering with /start first."
+				`❌ Sorry, I couldn't process your request: ${errorMessage}\n\nPlease try again or use /help for available commands.`
 			);
 		}
 	}
@@ -121,14 +154,67 @@ export async function handleUpdate(update: TelegramUpdate) {
 	}
 }
 
+// Helper function to format messages for Telegram
+function formatTelegramMessage(text: string): string {
+	// First, escape all special characters
+	const escapedText = text
+		.replace(/\*/g, "\\*") // Escape asterisks
+		.replace(/_/g, "\\_") // Escape underscores
+		.replace(/\[/g, "\\[") // Escape square brackets
+		.replace(/\]/g, "\\]")
+		.replace(/\(/g, "\\(") // Escape parentheses
+		.replace(/\)/g, "\\)")
+		.replace(/~/g, "\\~") // Escape tildes
+		.replace(/`/g, "\\`") // Escape backticks
+		.replace(/>/g, "\\>") // Escape greater than
+		.replace(/#/g, "\\#") // Escape hash
+		.replace(/\+/g, "\\+") // Escape plus
+		.replace(/-/g, "\\-") // Escape minus
+		.replace(/=/g, "\\=") // Escape equals
+		.replace(/\|/g, "\\|") // Escape pipe
+		.replace(/{/g, "\\{") // Escape curly braces
+		.replace(/}/g, "\\}")
+		.replace(/\./g, "\\.") // Escape dots
+		.replace(/!/g, "\\!"); // Escape exclamation marks
+
+	// Then, reapply markdown formatting with proper escaping
+	return escapedText
+		.replace(/\\\*([^*]+)\\\*/g, "*$1*") // Bold
+		.replace(/\\_([^_]+)\\_/g, "_$1_") // Italic
+		.replace(/\\\[([^\]]+)\\\]\\\(([^)]+)\\\)/g, "[$1]($2)"); // Links
+}
+
+// Helper function to split long messages
+function splitMessage(text: string, maxLength: number = 4000): string[] {
+	if (text.length <= maxLength) return [text];
+
+	const chunks: string[] = [];
+	let currentChunk = "";
+	const lines = text.split("\n");
+
+	for (const line of lines) {
+		if (currentChunk.length + line.length + 1 > maxLength) {
+			chunks.push(currentChunk.trim());
+			currentChunk = line;
+		} else {
+			currentChunk += (currentChunk ? "\n" : "") + line;
+		}
+	}
+
+	if (currentChunk) {
+		chunks.push(currentChunk.trim());
+	}
+
+	return chunks;
+}
+
 async function handleStartCommand(chatId: string, from: TelegramUser) {
 	// Create or retrieve user context
 	const user = await registerPlatform({ ...from, platform: "TELEGRAM" });
-	// // Update to use session service
-	// await sessionService.setSession(from.id.toString(), user);
 
 	try {
-		const welcomeMessage = `🛒 *Welcome to E-commerce Price Assistant Bot\!*
+		const welcomeMessage =
+			formatTelegramMessage(`🛒 Welcome to E-commerce Price Assistant Bot!
 
 *Available Commands:*
     /start - Start the bot and see welcome message
@@ -152,9 +238,12 @@ async function handleStartCommand(chatId: string, from: TelegramUser) {
     /bug - Report a bug or issue
     /feature - Submit a feature request
 
-Just send me a product URL or use the commands above to get started\!`;
+Just send me a product URL or use the commands above to get started!`);
 
-		bot.sendMessage(chatId, welcomeMessage, { parse_mode: "Markdown" });
+		await bot.sendMessage(chatId, welcomeMessage, {
+			parse_mode: "MarkdownV2",
+			disable_web_page_preview: true,
+		});
 	} catch (error) {
 		logger.error("Error in handleStartCommand:", error);
 		bot.sendMessage(
@@ -165,7 +254,7 @@ Just send me a product URL or use the commands above to get started\!`;
 }
 
 async function handleHelpCommand(chatId: string) {
-	const helpMessage = `🔧 *Bot Commands & Usage*
+	const helpMessage = formatTelegramMessage(`🔧 Bot Commands & Usage
 
 *Product Management:*
     /track <url> - Track a product for price changes
@@ -192,9 +281,12 @@ async function handleHelpCommand(chatId: string) {
 *Price Alerts:* You'll receive notifications when:
     • Prices drop below your target
     • Significant price changes occur
-    • Daily summary of price changes`;
+    • Daily summary of price changes`);
 
-	bot.sendMessage(chatId, helpMessage, { parse_mode: "Markdown" });
+	await bot.sendMessage(chatId, helpMessage, {
+		parse_mode: "MarkdownV2",
+		disable_web_page_preview: true,
+	});
 }
 
 async function handleUpdateCommand(chatId: string, userId: string) {

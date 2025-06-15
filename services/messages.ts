@@ -1,9 +1,6 @@
 "use server";
 
-import { COOKIE_NAME } from "@/lib/constants";
-import { verifyAuthToken } from "@/lib/firebase/admin";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
 
 export async function createMessage(
 	text: string,
@@ -15,6 +12,22 @@ export async function createMessage(
 			userId,
 			text,
 			sender,
+		},
+	});
+}
+
+export async function getMessages(userId: string) {
+	return await prisma.message.findMany({
+		where: {
+			userId,
+		},
+	});
+}
+
+export async function deleteMessages(userId: string) {
+	return await prisma.message.deleteMany({
+		where: {
+			userId,
 		},
 	});
 }

@@ -8,6 +8,7 @@ import {
 	MCPUserTrackedProduct,
 } from "@/types/mcp";
 import logger from "../logger";
+import { Message } from "@prisma/client";
 
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL;
@@ -77,7 +78,11 @@ export class MCPClientService {
 		}
 	}
 
-	async processQuery(query: string, userId?: string): Promise<string> {
+	async processQuery(
+		query: string,
+		userId?: string,
+		previousMessages: Message[] = []
+	): Promise<string> {
 		if (!this.isInitialized) {
 			await this.initialize();
 		}
@@ -88,23 +93,48 @@ export class MCPClientService {
 					{
 						role: "system",
 						content: `You are a helpful and knowledgeable e-commerce shopping assistant. 
-                        Always provide clear, concise, and friendly answers in well-structured markdown, using lists, tables, and formatting where appropriate to enhance readability in a chat interface.
+						Always provide clear, concise, and friendly answers in well-structured markdown, using lists, tables, and formatting where appropriate to enhance readability in a chat interface.
 
-                        - Use available tools only for specific tasks such as product search, price tracking, or retrieving product details.
-                        - For general questions, answer directly without using tools.
-                        - If you need more information, ask clarifying follow-up questions.
-                        - If you cannot answer a query, politely state that you cannot answer it.
-                        - Always format your responses as markdown, using bullet points, headings, tables, and code blocks when helpful.
-                        - When presenting product information, use tables or lists for clarity.
-                        - Keep your tone professional, approachable, and focused on helping the user make informed shopping decisions.`,
-					},
-					{
-						role: "user",
-						content: `${query}${
-							userId ? `\n\nUser ID: ${userId}` : ""
-						}`,
+						- Use available tools only for specific tasks such as product search, price tracking, or retrieving product details.
+						- For general questions, answer directly without using tools.
+						- If you need more information, ask clarifying follow-up questions.
+						- If you cannot answer a query, politely state that you cannot answer it.
+						- Always format your responses as markdown, using bullet points, headings, tables, and code blocks when helpful.
+						- When presenting product information, use tables or lists for clarity.
+						- Keep your tone professional, approachable, and focused on helping the user make informed shopping decisions.
+						- When responding to Telegram messages, ensure all markdown formatting is compatible with Telegram's markdown v2 format.`,
 					},
 				];
+
+			if (previousMessages.length > 0) {
+				messages.push(
+					...previousMessages.map((msg) => {
+						const message: OpenAI.Chat.Completions.ChatCompletionMessageParam =
+							{
+								role:
+									msg.sender === "USER"
+										? "user"
+										: "assistant",
+								content:
+									msg.sender === "USER"
+										? `${msg.text}${
+												userId
+													? `\n\nUser ID: ${userId}`
+													: ""
+										  }`
+										: msg.text,
+							};
+						return message;
+					})
+				);
+			} else {
+				messages.push({
+					role: "user",
+					content: `${query}${
+						userId ? `\n\nUser ID: ${userId}` : ""
+					}`,
+				});
+			}
 
 			const response = await this.llm.chat.completions.create({
 				model: "deepseek-chat",
