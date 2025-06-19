@@ -6,7 +6,7 @@ const authPaths: AuthPath[] = ["/auth/sign-in", "/auth/sign-up"];
 
 const isProtectedRoute = (pathname: string): boolean => {
 	if (!pathname || typeof pathname !== "string") return false;
-	return pathname.startsWith("/builder") || pathname.startsWith("/dashboard");
+	return pathname.startsWith("/dashboard");
 };
 
 export async function middleware(request: NextRequest) {

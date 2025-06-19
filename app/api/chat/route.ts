@@ -236,6 +236,51 @@ export async function POST(req: NextRequest) {
 							},
 						},
 
+						// Product details tool
+						get_products_details: {
+							description:
+								"Get detailed information about specific products from their URLs",
+							parameters: z.object({
+								urls: z.array(z.string().url()),
+							}),
+							execute: async ({ urls }: { urls: string[] }) => {
+								try {
+									const details = await Promise.all(
+										urls.map(async (url: string) => {
+											const platform =
+												detect_platform(url);
+											const response = await axios({
+												data: {
+													format: "raw",
+													url,
+													zone: unlocker_zone,
+												},
+												headers: api_headers(),
+												method: "POST",
+												responseType: "text",
+												url: "https://api.brightdata.com/request",
+											});
+											const baseUrl = new URL(url).origin;
+											return scraperService.parseProductDetails(
+												response.data,
+												platform,
+												baseUrl
+											);
+										})
+									);
+									return details;
+								} catch (error) {
+									throw new Error(
+										`Error fetching product details: ${
+											error instanceof Error
+												? error.message
+												: "Unknown error"
+										}`
+									);
+								}
+							},
+						},
+
 						// Track product tool
 						track_product: {
 							description: "Track a new product for a user",
