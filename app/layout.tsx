@@ -2,16 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
 import logger from "@/lib/logger";
-import { initializeServices } from "@/lib/init";
 import { AuthProvider } from "@/context/AuthContext";
 
 // Server-side initialization
 setupWebhook().catch((error) => {
 	logger.error("Failed to setup Telegram webhook:", error);
-});
-
-initializeServices().catch((error) => {
-	logger.error("Failed to initialize services:", error);
 });
 
 export const metadata: Metadata = {

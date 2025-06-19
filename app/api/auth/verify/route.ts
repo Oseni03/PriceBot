@@ -1,9 +1,10 @@
+import { COOKIE_NAME } from "@/lib/constants";
 import { verifyAuthToken } from "@/lib/firebase/admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
 	try {
-		const authToken = req.cookies.get("firebaseAuthToken")?.value;
+		const authToken = req.cookies.get(COOKIE_NAME)?.value;
 		if (!authToken) {
 			return NextResponse.json(
 				{ verified: false, error: "No auth token provided" },

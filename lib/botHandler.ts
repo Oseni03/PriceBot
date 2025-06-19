@@ -2,8 +2,9 @@ import logger from "./logger";
 import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
 import { registerPlatform, getUserByPlatform } from "@/services/user";
 import { type Product } from "@/types/products";
-import { BASE_URL, CREDIT_COSTS } from "./constants";
+import { BASE_URL } from "./constants";
 import { createMessage, getMessages } from "@/services/messages";
+import { CreditService } from "@/services/credits";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -95,16 +96,18 @@ export async function handleUpdate(update: TelegramUpdate) {
 			// Send typing indicator
 			await bot.sendChatAction(chatId, "typing");
 
-			if (user.credits < CREDIT_COSTS.AI_CHAT) {
-				bot.sendMessage(
-					chatId,
-					"⚠️ You don't have enough credits to continue chatting. Please top up your credits to continue.",
-					{ parse_mode: "MarkdownV2" }
-				);
-				return;
-			}
+			// Credit already managed in the chat route
+			// try {
+			// 	await CreditService.useCredits(user.id, "AI_CHAT");
+			// } catch (error) {
+			// 	bot.sendMessage(
+			// 		chatId,
+			// 		"⚠️ You don't have enough credits to continue chatting. Please top up your credits to continue.",
+			// 		{ parse_mode: "MarkdownV2" }
+			// 	);
+			// }
 
-			const response = await fetch(`${BASE_URL}/api/mcp/query`, {
+			const response = await fetch(`${BASE_URL}/api/chat`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -112,7 +115,7 @@ export async function handleUpdate(update: TelegramUpdate) {
 				body: JSON.stringify({
 					query: text,
 					userId: user.id,
-					previousMessages: previousMessages.slice(-5), // Keep last 5 messages for context
+					messages: previousMessages.slice(-5), // Keep last 5 messages for context
 				}),
 			});
 
@@ -120,12 +123,44 @@ export async function handleUpdate(update: TelegramUpdate) {
 				throw new Error("Failed to process query");
 			}
 
-			const data = await response.json();
+			// Handle streaming response
+			const reader = response.body?.getReader();
+			if (!reader) {
+				throw new Error("No response body");
+			}
+
+			let accumulatedText = "";
+			const decoder = new TextDecoder();
+
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				const chunk = decoder.decode(value);
+				const lines = chunk.split("\n");
+
+				for (const line of lines) {
+					if (line.startsWith("data: ")) {
+						const data = line.slice(6);
+						if (data === "[DONE]") break;
+
+						try {
+							const parsed = JSON.parse(data);
+							if (parsed.type === "text-delta") {
+								accumulatedText += parsed.textDelta;
+							}
+						} catch (e) {
+							// Ignore parsing errors for incomplete JSON
+						}
+					}
+				}
+			}
 
 			// Format the response for Telegram's markdown v2
-			const formattedResponse = formatTelegramMessage(data.response);
+			const formattedResponse = formatTelegramMessage(accumulatedText);
 
-			await createMessage(formattedResponse, "BOT", user.id);
+			// Message already saved to database in the chat route
+			// await createMessage(formattedResponse, "BOT", user.id);
 
 			// Split long messages if needed (Telegram has a 4096 character limit)
 			const messageChunks = splitMessage(formattedResponse);
@@ -295,7 +330,7 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 	try {
 		// Get user's tracked products
 		const productsResponse = await fetch(
-			`${BASE_URL}/api/mcp/user-products?userId=${userId}`,
+			`${BASE_URL}/api/products/user-products?userId=${userId}`,
 			{
 				method: "GET",
 				headers: {
@@ -315,7 +350,7 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 		const updates = await Promise.all(
 			products.map(async (product: Product) => {
 				const detailsResponse = await fetch(
-					`${BASE_URL}/api/mcp/product-details`,
+					`${BASE_URL}/api/products/product-details`,
 					{
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
@@ -331,7 +366,7 @@ async function handleUpdateCommand(chatId: string, userId: string) {
 		);
 
 		// Update products in database
-		await fetch(`${BASE_URL}/api/mcp/update-prices`, {
+		await fetch(`${BASE_URL}/api/products/update-prices`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ updates }),
@@ -352,7 +387,7 @@ async function handleListCommand(chatId: string, userId: string) {
 
 	try {
 		const response = await fetch(
-			`${BASE_URL}/api/mcp/user-products?userId=${userId}`,
+			`${BASE_URL}/api/products/user-products?userId=${userId}`,
 			{
 				method: "GET",
 				headers: {
@@ -430,7 +465,7 @@ async function handleCallbackQuery(
 			text: "Adding to tracking...",
 		});
 		try {
-			await fetch(`${BASE_URL}/api/mcp/user-products`, {
+			await fetch(`${BASE_URL}/api/products/user-products`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -454,7 +489,7 @@ async function handleCallbackQuery(
 		});
 		try {
 			await fetch(
-				`${BASE_URL}/api/mcp/user-products?productId=${productId}&userId=${user.id}`,
+				`${BASE_URL}/api/products/user-products?productId=${productId}&userId=${user.id}`,
 				{
 					method: "DELETE",
 					headers: { "Content-Type": "application/json" },

@@ -61,8 +61,8 @@ export function useChat() {
 					return;
 				}
 
-				// Send to MCP
-				const response = await fetch(`${BASE_URL}/api/mcp/query`, {
+				// Send to chat API with streaming
+				const response = await fetch(`${BASE_URL}/api/chat`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -70,7 +70,7 @@ export function useChat() {
 					body: JSON.stringify({
 						query: text,
 						userId: user.id,
-						messages: messages.slice(-5),
+						messages: messages.slice(-6, -1),
 					}),
 				});
 
@@ -78,13 +78,41 @@ export function useChat() {
 					throw new Error("Failed to process query");
 				}
 
-				const data = await response.json();
-				const botMessage = await createMessage(
-					data.response,
-					"BOT",
-					user.id
-				);
-				setMessages((prev) => [...prev, botMessage]);
+				// Handle streaming response
+				const reader = response.body?.getReader();
+				if (!reader) {
+					throw new Error("No response body");
+				}
+
+				let accumulatedText = "";
+				const decoder = new TextDecoder();
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+
+					const chunk = decoder.decode(value);
+					const lines = chunk.split("\n");
+
+					for (const line of lines) {
+						if (line.startsWith("data: ")) {
+							const data = line.slice(6);
+							if (data === "[DONE]") break;
+
+							try {
+								const parsed = JSON.parse(data);
+								if (parsed.type === "text-delta") {
+									accumulatedText += parsed.textDelta;
+								}
+							} catch (e) {
+								// Ignore parsing errors for incomplete JSON
+							}
+						}
+					}
+				}
+
+				// Refresh messages to get the latest from database
+				await fetchMessages();
 			} catch (error) {
 				console.error("Error in chat:", error);
 				const errorMessage = await createMessage(
@@ -97,7 +125,7 @@ export function useChat() {
 				setIsLoading(false);
 			}
 		},
-		[user]
+		[user, messages]
 	);
 
 	const clearMessages = useCallback(async () => {

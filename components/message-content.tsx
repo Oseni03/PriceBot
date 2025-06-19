@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Message } from "@prisma/client";
+import { Message } from "ai";
 
 function formatMarkdown(text: string) {
 	return text.split("\n").map((line) => {
@@ -31,12 +31,12 @@ function formatMarkdown(text: string) {
 
 export function MessageContent({ message }: { message: Message }) {
 	// If it's a user message, display as plain text
-	if (message.sender === "USER") {
-		return <div className="whitespace-pre-wrap">{message.text}</div>;
+	if (message.role === "user") {
+		return <div className="whitespace-pre-wrap">{message.content}</div>;
 	}
 
 	// For bot messages, parse markdown
-	const formattedLines = formatMarkdown(message.text);
+	const formattedLines = formatMarkdown(message.content);
 
 	return (
 		<div className="whitespace-pre-wrap">

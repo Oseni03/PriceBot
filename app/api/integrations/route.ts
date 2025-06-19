@@ -1,31 +1,9 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { verifyAuthToken } from "@/lib/firebase/admin";
-import { COOKIE_NAME } from "@/lib/constants";
 import { getUser } from "@/services/user";
 
 export async function GET() {
 	try {
-		const cookieStore = await cookies();
-		const authToken = cookieStore.get(COOKIE_NAME)?.value;
-
-		if (!authToken) {
-			return NextResponse.json(
-				{ error: "Authentication required" },
-				{ status: 401 }
-			);
-		}
-
-		const decodedToken = await verifyAuthToken(authToken).catch(() => null);
-		if (!decodedToken?.uid) {
-			return NextResponse.json(
-				{ error: "Invalid or expired authentication token" },
-				{ status: 401 }
-			);
-		}
-
-		// Get user and their platform integrations
-		const user = await getUser(decodedToken.uid);
+		const user = await getUser();
 
 		if (!user) {
 			return NextResponse.json(

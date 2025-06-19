@@ -14,11 +14,27 @@ export interface NewPlatform {
 	platform: Platform;
 }
 
-export async function getUser(userId: string) {
+export async function getUserByUserId(userId: string) {
 	return await prisma.user.findUnique({
 		where: { id: userId },
 		include: { platforms: true },
 	});
+}
+
+export async function getUser() {
+	const cookieStore = await cookies();
+	const authToken = cookieStore.get(COOKIE_NAME)?.value;
+
+	if (!authToken) {
+		throw new Error("Authentication required");
+	}
+
+	const decodedToken = await verifyAuthToken(authToken).catch(() => null);
+	if (!decodedToken?.uid) {
+		throw new Error("Invalid or expired authentication token");
+	}
+
+	return await getUserByUserId(decodedToken.uid);
 }
 
 export async function createOrUpdateUser(user: User) {

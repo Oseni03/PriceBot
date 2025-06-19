@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from "react";
 import { type Product } from "@/types/products";
 import { Plus, MoreVertical, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 // Dummy products for demonstration
 const dummyProducts: Product[] = [
@@ -59,44 +60,83 @@ export default function TracklistPage() {
 	});
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		const fetchProducts = async () => {
-			try {
-				setLoading(true);
-				setError(null);
-				const response = await fetch("/api/mcp/user-products");
-
-				if (!response.ok) {
-					throw new Error(
-						`Failed to fetch products: ${response.statusText}`
-					);
-				}
-
+	const fetchProducts = async () => {
+		try {
+			setLoading(true);
+			const response = await fetch("/api/products/user-products");
+			if (response.ok) {
 				const data = await response.json();
-				setProducts(data.products);
-			} catch (error) {
-				console.error("Failed to fetch products:", error);
-				setError("Failed to load products. Please try again later.");
-				setProducts([]);
-			} finally {
-				setLoading(false);
+				setProducts(data);
+			} else {
+				console.error("Failed to fetch products");
 			}
-		};
+		} catch (error) {
+			console.error("Error fetching products:", error);
+		} finally {
+			setLoading(false);
+		}
+	};
 
+	const handleTrackProduct = async (url: string) => {
+		try {
+			setLoading(true);
+			const response = await fetch("/api/products/user-products", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ url }),
+			});
+
+			if (response.ok) {
+				toast.success("Product tracked successfully!");
+				fetchProducts();
+			} else {
+				toast.error("Failed to track product");
+			}
+		} catch (error) {
+			console.error("Error tracking product:", error);
+			toast.error("Error tracking product");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleUntrackProduct = async (id: string) => {
+		try {
+			setLoading(true);
+			const response = await fetch(`/api/products/user-products?id=${id}`, {
+				method: "DELETE",
+			});
+
+			if (response.ok) {
+				toast.success("Product untracked successfully!");
+				fetchProducts();
+			} else {
+				toast.error("Failed to untrack product");
+			}
+		} catch (error) {
+			console.error("Error untracking product:", error);
+			toast.error("Error untracking product");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchProducts();
 	}, []);
+
 	const handleAddProduct = async () => {
 		try {
-			const response = await fetch("/api/mcp/user-products", {
+			const response = await fetch("/api/products/user-products", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					action: "track",
-					name: newProduct.name,
 					url: newProduct.url,
-					targetPrice: parseFloat(newProduct.target_price) * 100,
+					userId: "current-user-id",
 				}),
 			});
 
@@ -107,32 +147,12 @@ export default function TracklistPage() {
 			}
 
 			const data = await response.json();
-			setProducts((prevProducts) => [...prevProducts, data.product]);
+			setProducts((prevProducts) => [...prevProducts, data]);
 			setNewProduct({ name: "", url: "", target_price: "" });
 			setIsAddDialogOpen(false);
 		} catch (error) {
 			console.error("Failed to add product:", error);
 			setError("Failed to add product. Please try again later.");
-		}
-	};
-	const handleDeleteProduct = async (id: string) => {
-		try {
-			const response = await fetch(`/api/mcp/user-products?id=${id}`, {
-				method: "DELETE",
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					`Failed to delete product: ${response.statusText}`
-				);
-			}
-
-			setProducts((prevProducts) =>
-				prevProducts.filter((product) => product.id !== id)
-			);
-		} catch (error) {
-			console.error("Failed to delete product:", error);
-			setError("Failed to delete product. Please try again later.");
 		}
 	};
 
@@ -279,7 +299,7 @@ export default function TracklistPage() {
 									<DropdownMenuItem
 										className="text-red-600"
 										onClick={() =>
-											handleDeleteProduct(product.id)
+											handleUntrackProduct(product.id)
 										}
 									>
 										<Trash2 className="h-4 w-4 mr-2" />

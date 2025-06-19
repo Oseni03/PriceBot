@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAME } from "./lib/constants";
 
 type AuthPath = "/auth/sign-in" | "/auth/sign-up";
 const authPaths: AuthPath[] = ["/auth/sign-in", "/auth/sign-up"];
@@ -18,7 +19,7 @@ export async function middleware(request: NextRequest) {
 		}
 
 		// Get Firebase auth token from cookie
-		const hasAuthToken = request.cookies.has("firebaseAuthToken");
+		const hasAuthToken = request.cookies.has(COOKIE_NAME);
 
 		// Check if the path is an auth path
 		const isAuthPath = authPaths.some((path) => pathname === path);

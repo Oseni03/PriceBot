@@ -1,26 +1,15 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyAuthToken } from "@/lib/firebase/admin";
-import { COOKIE_NAME } from "@/lib/constants";
 import { Platform } from "@prisma/client";
+import { getUser } from "@/services/user";
 
 export async function POST(request: NextRequest) {
 	try {
-		const cookieStore = await cookies();
-		const authToken = cookieStore.get(COOKIE_NAME)?.value;
+		const user = await getUser();
 
-		if (!authToken) {
+		if (!user) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
-				{ status: 401 }
-			);
-		}
-
-		const decodedToken = await verifyAuthToken(authToken).catch(() => null);
-		if (!decodedToken?.uid) {
-			return NextResponse.json(
-				{ error: "Invalid or expired authentication token" },
 				{ status: 401 }
 			);
 		}
@@ -43,7 +32,7 @@ export async function POST(request: NextRequest) {
 		// Generate connection URLs or handle platform-specific logic
 		if (platform.toUpperCase() === "TELEGRAM") {
 			return NextResponse.json({
-				redirectUrl: `https://t.me/${process.env.TELEGRAM_BOT_USERNAME}?start=${decodedToken.uid}`,
+				redirectUrl: `https://t.me/${process.env.TELEGRAM_BOT_USERNAME}?start=${user.id}`,
 			});
 		}
 
@@ -63,20 +52,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
 	try {
-		const cookieStore = await cookies();
-		const authToken = cookieStore.get(COOKIE_NAME)?.value;
+		const user = await getUser();
 
-		if (!authToken) {
+		if (!user) {
 			return NextResponse.json(
 				{ error: "Authentication required" },
-				{ status: 401 }
-			);
-		}
-
-		const decodedToken = await verifyAuthToken(authToken).catch(() => null);
-		if (!decodedToken?.uid) {
-			return NextResponse.json(
-				{ error: "Invalid or expired authentication token" },
 				{ status: 401 }
 			);
 		}
@@ -101,7 +81,7 @@ export async function DELETE(request: NextRequest) {
 			where: {
 				platform_userId: {
 					platform: platform.toUpperCase() as Platform,
-					userId: decodedToken.uid,
+					userId: user.id,
 				},
 			},
 		});
