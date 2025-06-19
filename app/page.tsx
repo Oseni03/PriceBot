@@ -20,12 +20,28 @@ import {
 	Smartphone,
 	Globe,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import SubscriptionPlans from "@/components/subscription-plans";
+import { motion } from "framer-motion";
+
+// Animation variants
+const fadeInUp = {
+	initial: { opacity: 0, y: 20 },
+	animate: { opacity: 1, y: 0 },
+	transition: { duration: 0.5 }
+};
+
+const staggerContainer = {
+	animate: {
+		transition: {
+			staggerChildren: 0.1
+		}
+	}
+};
 
 export default function PriceTrackerLanding() {
-	const telegramBotURL = "https://t.me/PriceMorphBot";
-
 	const features = [
 		{
 			icon: <Globe className="h-6 w-6" />,
@@ -53,100 +69,59 @@ export default function PriceTrackerLanding() {
 		},
 	];
 
-	const testimonials = [
-		{
-			name: "Sarah Johnson",
-			role: "Tech Enthusiast",
-			content:
-				"The AI search is incredible! I just describe what I want, and it finds exactly what I'm looking for across all platforms.",
-			rating: 5,
-		},
-		{
-			name: "Mike Chen",
-			role: "Smart Shopper",
-			content:
-				"The price prediction feature helped me save $200 on my last purchase. The AI knew exactly when I should buy!",
-			rating: 5,
-		},
-		{
-			name: "Emily Davis",
-			role: "Online Shopper",
-			content:
-				"It's like having a personal shopping assistant. The natural conversations make shopping so much easier.",
-			rating: 5,
-		},
-	];
-
 	return (
 		<div className="min-h-screen bg-white">
 			{/* Header */}
-			<header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-				<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<div className="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center">
-							<MessageCircle className="h-5 w-5 text-white" />
-						</div>
-						<span className="font-bold text-xl">Morphe AI</span>
-					</div>
-					<nav className="hidden md:flex items-center gap-6">
-						<Link
-							href="#features"
-							className="text-gray-600 hover:text-gray-900"
-						>
-							Features
-						</Link>
-						<Link
-							href="#how-it-works"
-							className="text-gray-600 hover:text-gray-900"
-						>
-							How it Works
-						</Link>
-						<Link
-							href="#testimonials"
-							className="text-gray-600 hover:text-gray-900"
-						>
-							Reviews
-						</Link>
-					</nav>
-					<Button variant="outline" asChild>
-						<Link
-							href={telegramBotURL}
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							<MessageCircle className="h-4 w-4 mr-2" />
-							Get Started
-						</Link>
-					</Button>
-				</div>
-			</header>
+			<Header />
 
 			{/* Hero Section */}
-			<section className="py-20 px-4 min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
+			<motion.section
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 0.8 }}
+				className="py-20 px-4 min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white"
+			>
 				<div className="container mx-auto text-center max-w-4xl">
-					<Badge className="mb-4 bg-purple-100 text-purple-800 hover:bg-purple-100">
-						🤖 AI-Powered Shopping Assistant
-					</Badge>
-					<h1 className="text-5xl md:text-6xl font-bold mb-6 text-black">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.2 }}
+					>
+						<Badge className="mb-4 bg-purple-100 text-purple-800 hover:bg-purple-100">
+							🤖 AI-Powered Shopping Assistant
+						</Badge>
+					</motion.div>
+					<motion.h1
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.4 }}
+						className="text-5xl md:text-6xl font-bold mb-6 text-black"
+					>
 						Your AI Shopping Assistant
-					</h1>
-					<p className="text-xl text-gray-600 mb-8 leading-relaxed">
+					</motion.h1>
+					<motion.p
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.6 }}
+						className="text-xl text-gray-600 mb-8 leading-relaxed"
+					>
 						Chat naturally with our AI to search products, compare
 						prices, and track deals across multiple platforms. Let
 						AI help you find the best time to buy!
-					</p>
+					</motion.p>
 
-					<div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: 0.8 }}
+						className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+					>
 						<Button
 							size="lg"
 							className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
 							asChild
 						>
-							<Link
-								href={telegramBotURL}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href={"/dashboard/chat"}>
 								<MessageCircle className="h-5 w-5 mr-2" />
 								Chat with Morphe AI
 								<ArrowRight className="h-5 w-5 ml-2" />
@@ -160,7 +135,7 @@ export default function PriceTrackerLanding() {
 							<Globe className="h-5 w-5 mr-2" />
 							View Demo
 						</Button> */}
-					</div>
+					</motion.div>
 
 					{/* Supported Platforms */}
 					{/* <div className="mb-16">
@@ -209,15 +184,25 @@ export default function PriceTrackerLanding() {
 						</div>
 					</div> */}
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Features Section */}
-			<section
+			<motion.section
 				id="features"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 bg-white min-h-screen flex items-center justify-center"
 			>
 				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							Why Choose PriceMorph?
 						</h2>
@@ -225,51 +210,77 @@ export default function PriceTrackerLanding() {
 							Powerful features that make price tracking
 							effortless
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+					>
 						{features.map((feature, index) => (
-							<Card
+							<motion.div
 								key={index}
-								className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+								variants={fadeInUp}
 							>
-								<CardHeader className="text-center">
-									<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
-										{feature.icon}
-									</div>
-									<CardTitle className="text-xl">
-										{feature.title}
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
-									<CardDescription className="text-center text-gray-600">
-										{feature.description}
-									</CardDescription>
-								</CardContent>
-							</Card>
+								<Card
+									className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+								>
+									<CardHeader className="text-center">
+										<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 text-white">
+											{feature.icon}
+										</div>
+										<CardTitle className="text-xl">
+											{feature.title}
+										</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<CardDescription className="text-center text-gray-600">
+											{feature.description}
+										</CardDescription>
+									</CardContent>
+								</Card>
+							</motion.div>
 						))}
-					</div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Features Showcase */}
-			<section
+			<motion.section
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 min-h-screen flex items-center justify-center"
 				id="features"
 			>
 				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							Powerful Features at Your Fingertips
 						</h2>
 						<p className="text-xl text-gray-600">
 							Everything you need to become a smart shopper
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+					>
 						{/* Product Search Feature */}
-						<div>
+						<motion.div variants={fadeInUp}>
 							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<Globe className="h-6 w-6 text-white" />
 							</div>
@@ -300,8 +311,11 @@ export default function PriceTrackerLanding() {
 									<span>Real-time price comparison</span>
 								</li>
 							</ul>
-						</div>
-						<div className="bg-purple-50 rounded-2xl p-8">
+						</motion.div>
+						<motion.div
+							variants={fadeInUp}
+							className="bg-purple-50 rounded-2xl p-8"
+						>
 							<div className="bg-white rounded-lg shadow-lg p-6">
 								<div className="flex items-center gap-3 mb-4">
 									<div className="h-8 w-8 bg-purple-200 rounded"></div>
@@ -313,10 +327,13 @@ export default function PriceTrackerLanding() {
 									<div className="h-3 bg-purple-100 rounded w-1/2"></div>
 								</div>
 							</div>
-						</div>
+						</motion.div>
 
 						{/* Price Tracking Feature */}
-						<div className="lg:order-2">
+						<motion.div
+							variants={fadeInUp}
+							className="lg:order-2"
+						>
 							<div className="bg-purple-50 rounded-2xl p-8">
 								<div className="bg-white rounded-lg shadow-lg p-6">
 									<div className="flex items-center justify-between mb-4">
@@ -336,8 +353,11 @@ export default function PriceTrackerLanding() {
 									</div>
 								</div>
 							</div>
-						</div>
-						<div className="lg:order-1">
+						</motion.div>
+						<motion.div
+							variants={fadeInUp}
+							className="lg:order-1"
+						>
 							<div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
 								<TrendingDown className="h-6 w-6 text-white" />
 							</div>
@@ -363,153 +383,141 @@ export default function PriceTrackerLanding() {
 									<span>Price drop predictions</span>
 								</li>
 							</ul>
-						</div>
-					</div>
+						</motion.div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* How It Works */}
-			<section
+			<motion.section
 				id="how-it-works"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
 				className="py-20 px-4 min-h-screen flex items-center justify-center"
 			>
 				<div className="container mx-auto max-w-4xl">
-					<div className="text-center mb-16">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-center mb-16"
+					>
 						<h2 className="text-4xl font-bold mb-4">
 							How It Works
 						</h2>
 						<p className="text-xl text-gray-600">
 							Get started in 3 simple steps
 						</p>
-					</div>
+					</motion.div>
 
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-								<Globe className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								1. Search Products
-							</h3>
-							<p className="text-gray-600">
-								Search for any product across Amazon, Etsy, Best
-								Buy, and other supported stores
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-6">
-								<ShoppingCart className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								2. View Details
-							</h3>
-							<p className="text-gray-600">
-								See product information, current prices, and
-								historical price trends
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-300 rounded-full flex items-center justify-center mx-auto mb-6">
-								<TrendingDown className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								3. Track Prices
-							</h3>
-							<p className="text-gray-600">
-								Add products to your watchlist and set your
-								desired target prices
-							</p>
-						</div>
-
-						<div className="text-center">
-							<div className="h-16 w-16 bg-purple-400 rounded-full flex items-center justify-center mx-auto mb-6">
-								<Bell className="h-8 w-8 text-black" />
-							</div>
-							<h3 className="text-xl font-semibold mb-4">
-								4. Get Notified
-							</h3>
-							<p className="text-gray-600">
-								Receive instant Telegram alerts when prices drop
-								to your target
-							</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Testimonials */}
-			<section
-				id="testimonials"
-				className="py-20 px-4 bg-white min-h-screen flex items-center justify-center"
-			>
-				<div className="container mx-auto max-w-6xl">
-					<div className="text-center mb-16">
-						<h2 className="text-4xl font-bold mb-4">
-							What Our Users Say
-						</h2>
-						<p className="text-xl text-gray-600">
-							Join thousands of satisfied customers
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{testimonials.map((testimonial, index) => (
-							<Card key={index} className="border-0 shadow-lg">
-								<CardContent className="pt-6">
-									<div className="flex mb-4">
-										{[...Array(testimonial.rating)].map(
-											(_, i) => (
-												<Star
-													key={i}
-													className="h-5 w-5 text-yellow-400 fill-current"
-												/>
-											)
-										)}
-									</div>
-									<p className="text-gray-600 mb-6">
-										"{testimonial.content}"
-									</p>
-									<div>
-										<div className="font-semibold">
-											{testimonial.name}
-										</div>
-										<div className="text-sm text-gray-500">
-											{testimonial.role}
-										</div>
-									</div>
-								</CardContent>
-							</Card>
+					<motion.div
+						variants={staggerContainer}
+						initial="initial"
+						whileInView="animate"
+						viewport={{ once: true }}
+						className="grid grid-cols-1 md:grid-cols-4 gap-8"
+					>
+						{[
+							{
+								icon: <Globe className="h-8 w-8 text-black" />,
+								title: "1. Search Products",
+								description: "Search for any product across Amazon, Etsy, Best Buy, and other supported stores"
+							},
+							{
+								icon: <ShoppingCart className="h-8 w-8 text-black" />,
+								title: "2. View Details",
+								description: "See product information, current prices, and historical price trends"
+							},
+							{
+								icon: <TrendingDown className="h-8 w-8 text-black" />,
+								title: "3. Track Prices",
+								description: "Add products to your watchlist and set your desired target prices"
+							},
+							{
+								icon: <Bell className="h-8 w-8 text-black" />,
+								title: "4. Get Notified",
+								description: "Receive instant Telegram alerts when prices drop to your target"
+							}
+						].map((step, index) => (
+							<motion.div
+								key={index}
+								variants={fadeInUp}
+								className="text-center"
+							>
+								<div className="h-16 w-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+									{step.icon}
+								</div>
+								<h3 className="text-xl font-semibold mb-4">
+									{step.title}
+								</h3>
+								<p className="text-gray-600">
+									{step.description}
+								</p>
+							</motion.div>
 						))}
-					</div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
+
+			{/* Pricing Section */}
+			<motion.section
+				id="pricing"
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
+				className="py-20 px-4 bg-gray-50 min-h-screen flex items-center justify-center"
+			>
+				<SubscriptionPlans />
+			</motion.section>
 
 			{/* CTA Section */}
-			<section className="py-20 px-4 bg-purple-600">
+			<motion.section
+				initial={{ opacity: 0 }}
+				whileInView={{ opacity: 1 }}
+				viewport={{ once: true }}
+				transition={{ duration: 0.8 }}
+				className="py-20 px-4 bg-purple-600"
+			>
 				<div className="container mx-auto text-center max-w-4xl">
-					<h2 className="text-4xl font-bold text-white mb-6">
+					<motion.h2
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+						className="text-4xl font-bold text-white mb-6"
+					>
 						Ready to Shop Smarter with AI?
-					</h2>
-					<p className="text-xl text-purple-100 mb-8">
+					</motion.h2>
+					<motion.p
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.2 }}
+						className="text-xl text-purple-100 mb-8"
+					>
 						Start chatting with Morphe AI and experience the future
 						of shopping
-					</p>
+					</motion.p>
 
-					<div className="flex flex-col sm:flex-row gap-4 justify-center">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.4 }}
+						className="flex flex-col sm:flex-row gap-4 justify-center"
+					>
 						<Button
 							size="lg"
 							className="bg-white text-black hover:bg-purple-100 text-lg px-8 py-6"
 							asChild
 						>
-							<Link
-								href={telegramBotURL}
-								target="_blank"
-								rel="noopener noreferrer"
-							>
+							<Link href="/dashboard/chat">
 								<MessageCircle className="h-5 w-5 mr-2" />
-								Join Telegram Bot
+								Chat with Morphe AI
 								<ArrowRight className="h-5 w-5 ml-2" />
 							</Link>
 						</Button>
@@ -521,110 +529,27 @@ export default function PriceTrackerLanding() {
               <Smartphone className="h-5 w-5 mr-2" />
               Download App
             </Button> */}
-					</div>
+					</motion.div>
 
-					<div className="mt-8 flex items-center justify-center gap-4 text-gray-300">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5, delay: 0.6 }}
+						className="mt-8 flex items-center justify-center gap-4 text-gray-300"
+					>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>Free to use</span>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>No credit card required</span>
 						<CheckCircle className="h-5 w-5 text-black" />
 						<span>Cancel anytime</span>
-					</div>
+					</motion.div>
 				</div>
-			</section>
+			</motion.section>
 
 			{/* Footer with updated branding */}
-			<footer className="py-12 px-4 bg-gray-900 text-white">
-				<div className="container mx-auto max-w-6xl">
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-						<div>
-							<div className="flex items-center gap-2 mb-4">
-								<div className="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center">
-									<TrendingDown className="h-5 w-5 text-white" />
-								</div>
-								<span className="font-bold text-xl">
-									PriceMorph
-								</span>
-							</div>
-							<p className="text-gray-400">
-								The smartest way to track prices and save money
-								on your favorite products.
-							</p>
-						</div>
-
-						<div>
-							<h4 className="font-semibold mb-4">Product</h4>
-							<ul className="space-y-2 text-gray-400">
-								<li>
-									<Link
-										href="/#features"
-										className="hover:text-white"
-									>
-										Features
-									</Link>
-								</li>
-								{/* <li>
-									<Link href="#" className="hover:text-white">
-										Pricing
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										API
-									</Link>
-								</li> */}
-							</ul>
-						</div>
-
-						<div>
-							<h4 className="font-semibold mb-4">Support</h4>
-							<ul className="space-y-2 text-gray-400">
-								<li>
-									<Link href="#" className="hover:text-white">
-										Help Center
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										Contact
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										Status
-									</Link>
-								</li>
-							</ul>
-						</div>
-
-						<div>
-							<h4 className="font-semibold mb-4">Company</h4>
-							<ul className="space-y-2 text-gray-400">
-								<li>
-									<Link href="#" className="hover:text-white">
-										About
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										Privacy
-									</Link>
-								</li>
-								<li>
-									<Link href="#" className="hover:text-white">
-										Terms
-									</Link>
-								</li>
-							</ul>
-						</div>
-					</div>
-
-					<div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-						<p>&copy; 2024 PriceMorph. All rights reserved.</p>
-					</div>
-				</div>
-			</footer>
+			<Footer />
 		</div>
 	);
 }

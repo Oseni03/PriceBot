@@ -2,20 +2,16 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
 import logger from "@/lib/logger";
-import { initializeServices } from "@/lib/init";
+import { AuthProvider } from "@/context/AuthContext";
 
 // Server-side initialization
 setupWebhook().catch((error) => {
 	logger.error("Failed to setup Telegram webhook:", error);
 });
 
-initializeServices().catch((error) => {
-	logger.error("Failed to initialize services:", error);
-});
-
 export const metadata: Metadata = {
-	title: "PriceMorph - Multi-platform E-commerce Price Tracker",
-	description: "PriceMorph - Multi-platform E-commerce Price Tracker",
+	title: "Morphe AI - E-commerce Multi-Platform AI Shopper",
+	description: "Morphe AI - E-commerce Multi-Platform AI Shopper",
 };
 
 export default function RootLayout({
@@ -25,7 +21,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body>{children}</body>
+			<body>
+				<AuthProvider>{children}</AuthProvider>
+			</body>
 		</html>
 	);
 }

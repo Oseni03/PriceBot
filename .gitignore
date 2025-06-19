@@ -30,3 +30,6 @@ next-env.d.ts
 # logger
 combined.log
 error.log
+
+# Repomix
+repomix-output.xml

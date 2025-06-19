@@ -3,6 +3,7 @@
 import { ProductError } from "../lib/errors/ProductError";
 import logger from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { TrackingProduct } from "@/types/products";
 
 export async function getUserTrackedProducts({
 	userId,
@@ -18,9 +19,7 @@ export async function getUserTrackedProducts({
 
 		const products = await prisma.product.findMany({
 			where: {
-				User: {
-					userId: userId,
-				},
+				userId,
 			},
 			include: {
 				prices: include_price_history,
@@ -96,9 +95,12 @@ export async function updateAllProducts(
 	}
 }
 
-export async function trackProduct(userId: string, url: string) {
+export async function trackProduct(
+	userId: string,
+	productDetail: TrackingProduct
+) {
 	try {
-		if (!userId || !url) {
+		if (!userId || !productDetail.url) {
 			throw new ProductError(
 				"User ID and URL are required",
 				"INVALID_INPUT",
@@ -106,25 +108,17 @@ export async function trackProduct(userId: string, url: string) {
 			);
 		}
 
-		if (!url.startsWith("http")) {
+		if (!productDetail.url.startsWith("http")) {
 			throw new ProductError("Invalid URL format", "INVALID_INPUT", 400);
-		}
-
-		const user = await prisma.user.findUnique({
-			where: { userId },
-		});
-
-		if (!user) {
-			throw new ProductError("User not found", "NOT_FOUND", 404);
 		}
 
 		return await prisma.product.create({
 			data: {
-				url,
-				name: "New Product", // This should be updated with actual product name
-				platform: new URL(url).hostname, // This should be determined from URL
-				tracking_type: "price",
-				userId: user.id,
+				url: productDetail.url,
+				name: productDetail.name, // This should be updated with actual product name
+				platform: productDetail.platform, // This should be determined from URL
+				tracking_type: productDetail.tracking_type,
+				userId,
 			},
 		});
 	} catch (error) {
@@ -136,26 +130,10 @@ export async function trackProduct(userId: string, url: string) {
 
 export async function untrackProduct(userId: string, productId: string) {
 	try {
-		if (!userId || !productId) {
-			throw new ProductError(
-				"User ID and Product ID are required",
-				"INVALID_INPUT",
-				400
-			);
-		}
-
-		const user = await prisma.user.findUnique({
-			where: { userId },
-		});
-
-		if (!user) {
-			throw new ProductError("User not found", "NOT_FOUND", 404);
-		}
-
 		const product = await prisma.product.findFirst({
 			where: {
 				id: productId,
-				userId: user.id,
+				userId,
 			},
 		});
 
@@ -170,9 +148,22 @@ export async function untrackProduct(userId: string, productId: string) {
 		return await prisma.product.delete({
 			where: {
 				id: productId,
-				userId: user.id,
+				userId,
 			},
 		});
+	} catch (error) {
+		logger.error("Failed to untrack product:", error);
+		if (error instanceof ProductError) throw error;
+		throw new ProductError("Failed to untrack product", "DATABASE_ERROR");
+	}
+}
+
+export async function getUserProducts(userId: string) {
+	try {
+		const trackedProducts = await prisma.product.count({
+			where: { userId },
+		});
+		return trackedProducts;
 	} catch (error) {
 		logger.error("Failed to untrack product:", error);
 		if (error instanceof ProductError) throw error;
