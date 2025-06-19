@@ -5,6 +5,7 @@ import DashboardSidebar from "@/components/ui/dashboard-sidebar";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
+import NotificationBell from "@/components/ui/notification-bell";
 
 interface DashboardLayoutProps {
 	children: ReactNode;
@@ -24,9 +25,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 	return (
 		<div className="flex h-screen bg-white">
 			<div
-				className={`${
-					isSidebarOpen ? "block" : "hidden"
-				} border-r bg-white/80 backdrop-blur-sm`}
+				className={`${isSidebarOpen ? "block" : "hidden"
+					} border-r bg-white/80 backdrop-blur-sm`}
 			>
 				<DashboardSidebar />
 			</div>
@@ -60,6 +60,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 								</span>
 							</div>
 						))}
+					</div>
+					<div className="ml-auto">
+						<NotificationBell />
 					</div>
 				</header>
 				<main className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-purple-50 to-white">

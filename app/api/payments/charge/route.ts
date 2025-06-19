@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { CREDIT_PLANS } from "@/lib/constants";
 import { getUser } from "@/services/user";
+import { notifyPaymentSuccess } from "@/services/notifications";
 
 type PlanType = keyof typeof CREDIT_PLANS;
 
@@ -59,7 +60,8 @@ async function chargeCard({
 	const data = await response.json();
 
 	if (data.status === "success" || data.data?.status === "successful") {
-		// You may want to verify the transaction here
+		// Create a success notification
+		await notifyPaymentSuccess(userId, CREDIT_PLANS[plan].credits);
 		return { success: true, message: "Payment successful", data };
 	} else if (
 		data.status === "success" &&
