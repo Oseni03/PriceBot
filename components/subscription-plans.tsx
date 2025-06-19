@@ -120,14 +120,12 @@ export default function SubscriptionPlans() {
 
 									<Button
 										className="w-full bg-purple-600 hover:bg-purple-700"
-										onClick={() =>
-											handlePurchaseCredits(planKey)
-										}
+										onClick={() => {
+											window.location.href = `/dashboard/checkout?plan=${planKey}`;
+										}}
 										disabled={loading}
 									>
-										{loading
-											? "Processing..."
-											: "Purchase Credits"}
+										{loading ? "Processing..." : "Purchase Credits"}
 									</Button>
 								</div>
 							</CardContent>

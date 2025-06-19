@@ -4,6 +4,8 @@ import SubscriptionPlans from "@/components/subscription-plans";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 interface UsageStats {
 	tokensUsed: number;
@@ -15,6 +17,15 @@ interface UsageStats {
 export default function SubscriptionPage() {
 	const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
 	const [loading, setLoading] = useState(true);
+	const searchParams = useSearchParams();
+	const paymentStatus = searchParams.get("payment");
+	const txRef = searchParams.get("tx_ref");
+
+	useEffect(() => {
+		if (paymentStatus === "success") {
+			toast.success("Payment successful! Your credits have been added.");
+		}
+	}, [paymentStatus]);
 
 	useEffect(() => {
 		async function fetchUsageStats() {
@@ -26,13 +37,14 @@ export default function SubscriptionPage() {
 				setUsageStats(data);
 			} catch (error) {
 				console.error("Error fetching usage stats:", error);
+				toast.error("Failed to load usage statistics");
 			} finally {
 				setLoading(false);
 			}
 		}
 
 		fetchUsageStats();
-	}, []);
+	}, [paymentStatus]); // Refresh stats after payment
 
 	if (loading) {
 		return <div>Loading...</div>;
