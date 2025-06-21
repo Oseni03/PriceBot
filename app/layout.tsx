@@ -3,6 +3,7 @@ import "./globals.css";
 import { setupWebhook } from "@/lib/telegramBot";
 import logger from "@/lib/logger";
 import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "@/components/ui/sonner";
 
 // Server-side initialization
 setupWebhook().catch((error) => {
@@ -22,7 +23,10 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body>
-				<AuthProvider>{children}</AuthProvider>
+				<AuthProvider>
+					{children}
+					<Toaster />
+				</AuthProvider>
 			</body>
 		</html>
 	);
