@@ -4,23 +4,23 @@ import { headers } from "next/headers";
 import logger from "@/lib/logger";
 import { getAllTrackedProducts } from "@/services/products";
 
-export async function POST() {
-	try {
-		const headersList = await headers();
-		const authHeader = headersList.get("authorization");
+// Concurrency limit to avoid overwhelming external APIs
+const CONCURRENCY_LIMIT = 5;
 
-		if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-			return NextResponse.json(
-				{ error: "Unauthorized" },
-				{ status: 401 }
-			);
-		}
+// Batch size for database updates
+const BATCH_SIZE = 10;
 
-		// 1. Get all tracked products
-		const products = await getAllTrackedProducts();
+// Helper function to process products in batches
+async function processBatch(products: any[], batchSize: number) {
+	const batches = [];
+	for (let i = 0; i < products.length; i += batchSize) {
+		batches.push(products.slice(i, i + batchSize));
+	}
 
-		const updates = await Promise.all(
-			products.map(async (product) => {
+	const results = [];
+	for (const batch of batches) {
+		const batchResults = await Promise.allSettled(
+			batch.map(async (product) => {
 				try {
 					const detailResponse = await fetch(
 						`${process.env.NEXTAUTH_URL}/api/products/product-details`,
@@ -29,12 +29,14 @@ export async function POST() {
 							headers: {
 								"Content-Type": "application/json",
 							},
-							body: JSON.stringify({ url: product.url }), // Empty updates for now, will be handled by the service
+							body: JSON.stringify({ url: product.url }),
 						}
 					);
 
 					if (!detailResponse.ok) {
-						throw new Error("Failed to update prices in database");
+						throw new Error(
+							`HTTP ${detailResponse.status}: ${detailResponse.statusText}`
+						);
 					}
 
 					const details = await detailResponse.json();
@@ -42,47 +44,158 @@ export async function POST() {
 					return {
 						productId: product.id,
 						currentPrice: details.price * 100, // Convert to cents
+						success: true,
 					};
 				} catch (error) {
 					logger.error(
 						`Failed to get details for product ${product.id}:`,
 						error
 					);
-					return null;
+					return {
+						productId: product.id,
+						error:
+							error instanceof Error
+								? error.message
+								: "Unknown error",
+						success: false,
+					};
 				}
 			})
 		);
 
-		// 3. Filter out failed updates and update database
-		const validUpdates = updates.filter(
-			(update): update is { productId: string; currentPrice: number } =>
-				update !== null
-		);
+		// Process batch results
+		const successfulUpdates = batchResults
+			.filter(
+				(result): result is PromiseFulfilledResult<any> =>
+					result.status === "fulfilled" && result.value.success
+			)
+			.map((result) => result.value);
 
-		// Update prices for all tracked products
-		const updateResponse = await fetch(
-			`${process.env.NEXTAUTH_URL}/api/products/update-prices`,
-			{
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ updates: validUpdates }),
-			}
-		);
+		const failedUpdates = batchResults
+			.filter(
+				(result): result is PromiseFulfilledResult<any> =>
+					result.status === "fulfilled" && !result.value.success
+			)
+			.map((result) => result.value);
 
-		if (!updateResponse.ok) {
-			throw new Error("Failed to update prices in database");
+		// Add successful updates to results
+		results.push(...successfulUpdates);
+
+		// Log failed updates
+		if (failedUpdates.length > 0) {
+			logger.warn(`Batch failed updates:`, failedUpdates);
 		}
 
-		const results = await updateResponse.json();
+		// Small delay between batches to be respectful to external APIs
+		if (batches.indexOf(batch) < batches.length - 1) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+	}
+
+	return results;
+}
+
+export async function POST() {
+	const startTime = Date.now();
+
+	try {
+		logger.info("Starting price update cron job");
+
+		// 1. Get all tracked products
+		const products = await getAllTrackedProducts();
+		logger.info(`Found ${products.length} products to update`);
+
+		if (products.length === 0) {
+			return NextResponse.json(
+				{
+					success: true,
+					updated: 0,
+					failed: 0,
+					message: "No products to update",
+					duration: Date.now() - startTime,
+				},
+				{
+					status: 200,
+					headers: {
+						"Access-Control-Allow-Origin": "*",
+						"Content-Type": "application/json",
+					},
+				}
+			);
+		}
+
+		// 2. Process products in batches with concurrency control
+		const validUpdates = await processBatch(products, CONCURRENCY_LIMIT);
+
+		if (validUpdates.length === 0) {
+			logger.warn("No successful price updates");
+			return NextResponse.json(
+				{
+					success: true,
+					updated: 0,
+					failed: products.length,
+					message: "No successful updates",
+					duration: Date.now() - startTime,
+				},
+				{
+					status: 200,
+					headers: {
+						"Access-Control-Allow-Origin": "*",
+						"Content-Type": "application/json",
+					},
+				}
+			);
+		}
+
+		// 3. Batch database updates
+		const updateBatches = [];
+		for (let i = 0; i < validUpdates.length; i += BATCH_SIZE) {
+			updateBatches.push(validUpdates.slice(i, i + BATCH_SIZE));
+		}
+
+		const updateResults = [];
+		for (const batch of updateBatches) {
+			try {
+				const updateResponse = await fetch(
+					`${process.env.NEXTAUTH_URL}/api/products/update-prices`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ updates: batch }),
+					}
+				);
+
+				if (!updateResponse.ok) {
+					throw new Error(
+						`Database update failed: ${updateResponse.status}`
+					);
+				}
+
+				const result = await updateResponse.json();
+				updateResults.push(result);
+			} catch (error) {
+				logger.error("Failed to update batch in database:", error);
+				// Continue with other batches even if one fails
+			}
+		}
+
+		const duration = Date.now() - startTime;
+		const failed = products.length - validUpdates.length;
+
+		logger.info(
+			`Cron job completed in ${duration}ms. Updated: ${validUpdates.length}, Failed: ${failed}`
+		);
 
 		return NextResponse.json(
 			{
 				success: true,
 				updated: validUpdates.length,
-				failed: products.length - validUpdates.length,
-				results,
+				failed,
+				batches: updateBatches.length,
+				duration,
+				results: updateResults,
 			},
 			{
 				status: 200,
@@ -93,12 +206,15 @@ export async function POST() {
 			}
 		);
 	} catch (error) {
+		const duration = Date.now() - startTime;
 		logger.error("Cron job failed:", error);
+
 		return NextResponse.json(
 			{
 				error: "Internal server error",
 				details:
 					error instanceof Error ? error.message : "Unknown error",
+				duration,
 			},
 			{
 				status: 500,

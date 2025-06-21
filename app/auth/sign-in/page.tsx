@@ -1,12 +1,12 @@
 import AuthPage from "@/components/auth-page";
-import PageWrapper from "@/components/page-wrapper";
+import PublicLayout from "@/components/layouts/public-layout";
 import React from "react";
 
 function Page() {
 	return (
-		<PageWrapper>
+		<PublicLayout>
 			<AuthPage actionText={"Sign in"} redirectPath={"/dashboard/chat"} />
-		</PageWrapper>
+		</PublicLayout>
 	);
 }
 
