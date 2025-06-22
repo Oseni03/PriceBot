@@ -3,8 +3,7 @@ import { telegramBot as bot, formatTrackedProducts } from "./telegramBot";
 import { registerPlatform, getUserByPlatform } from "@/services/user";
 import { type Product } from "@/types/products";
 import { BASE_URL } from "./constants";
-import { createMessage, getMessages } from "@/services/messages";
-import { CreditService } from "@/services/credits";
+import { getMessages } from "@/services/messages";
 
 // Add type definitions
 interface TelegramUpdate {
@@ -95,17 +94,6 @@ export async function handleUpdate(update: TelegramUpdate) {
 
 			// Send typing indicator
 			await bot.sendChatAction(chatId, "typing");
-
-			// Credit already managed in the chat route
-			// try {
-			// 	await CreditService.useCredits(user.id, "AI_CHAT");
-			// } catch (error) {
-			// 	bot.sendMessage(
-			// 		chatId,
-			// 		"⚠️ You don't have enough credits to continue chatting. Please top up your credits to continue.",
-			// 		{ parse_mode: "MarkdownV2" }
-			// 	);
-			// }
 
 			const response = await fetch(`${BASE_URL}/api/chat`, {
 				method: "POST",

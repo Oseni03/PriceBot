@@ -25,7 +25,7 @@ export default function Chat({
         body: { userId: id, messages: initialMessages },
         onError: (error) => {
             console.log(error)
-        }
+        },
     });
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null)

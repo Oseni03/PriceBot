@@ -2,7 +2,6 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { NextRequest } from "next/server";
 import { getMessages, createMessage } from "@/services/messages";
-import { CreditService } from "@/services/credits";
 import logger from "@/lib/logger";
 import { openai } from "@ai-sdk/openai";
 import axios from "axios";
@@ -15,6 +14,7 @@ import {
 } from "@/services/products";
 import { createDataStream, generateId } from "ai";
 import { convertDBMessageToAI } from "@/lib/message-utils";
+import { CreditService } from "@/services/credits";
 
 // Helper function to detect platform
 function detect_platform(url: string): Platform {
@@ -64,9 +64,6 @@ export async function POST(req: NextRequest) {
 		} else {
 			previousMessages = messages;
 		}
-
-		// Use credits before processing
-		await CreditService.useCredits(userId, "AI_CHAT");
 
 		const stream = createDataStream({
 			execute: (dataStream) => {
@@ -184,6 +181,43 @@ export async function POST(req: NextRequest) {
 											});
 										}
 									}
+
+									// Distribute max_results across all platforms
+									if (
+										typeof max_results === "number" &&
+										max_results > 0
+									) {
+										const numPlatforms = results.length;
+										const baseCount = Math.floor(
+											max_results / numPlatforms
+										);
+										let remainder =
+											max_results % numPlatforms;
+										const distributed = results.map(
+											(result) => {
+												if (
+													result.data &&
+													Array.isArray(result.data)
+												) {
+													let take = baseCount;
+													if (remainder > 0) {
+														take += 1;
+														remainder -= 1;
+													}
+													return {
+														...result,
+														data: result.data.slice(
+															0,
+															take
+														),
+													};
+												}
+												return result;
+											}
+										);
+										return { query, results: distributed };
+									}
+
 									return { query, results };
 								} catch (error) {
 									throw new Error(
@@ -513,7 +547,7 @@ export async function POST(req: NextRequest) {
 							},
 						},
 					},
-					onFinish: async ({ response }) => {
+					onFinish: async ({ response, usage }) => {
 						// Save the bot response to the database
 						const lastMessage =
 							response.messages[response.messages.length - 1];
@@ -522,7 +556,10 @@ export async function POST(req: NextRequest) {
 								? lastMessage.content
 								: JSON.stringify(lastMessage.content);
 
-						await createMessage(content, "BOT", userId);
+						await Promise.all([
+							createMessage(content, "BOT", userId),
+							CreditService.useCredits(userId, "AI_CHAT", usage),
+						]);
 					},
 				});
 
